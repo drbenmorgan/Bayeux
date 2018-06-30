@@ -14,6 +14,7 @@
 
 // This project:
 #include <mctools/g4/processes/em_model_factory.h>
+#include <mctools/g4/data_libraries.h>
 
 int main(int argc_, char ** argv_)
 {
@@ -43,6 +44,10 @@ int main(int argc_, char ** argv_)
       }
       iarg++;
     }
+
+    // Need data
+    geant4_data_library dl;
+    dl.configure_data();
 
     mctools::g4::processes::em_model_factory EmModFact;
     EmModFact.initialize();
