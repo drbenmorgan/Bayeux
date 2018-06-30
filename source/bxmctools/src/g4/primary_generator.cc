@@ -53,6 +53,11 @@
 #include <G4Positron.hh>
 #include <G4Alpha.hh>
 
+#include <G4Version.hh>
+#if G4VERSION_NUMBER > 969
+#include <G4IonTable.hh>
+#endif
+
 // This project:
 #include <mctools/g4/manager.h>
 #include <mctools/g4/run_action.h>
@@ -513,7 +518,11 @@ namespace mctools {
             }
             // Instantiate the G4 corresponding ion:
             g4_particle =
+#if G4VERSION_NUMBER < 1000
               G4ParticleTable::GetParticleTable()->GetIon(Z, A, excitation_energy);
+#else
+              G4IonTable::GetIonTable()->GetIon(Z, A, excitation_energy);
+#endif
             g4_particle_name = g4_particle->GetParticleName();
             _particle_gun_->SetParticleDefinition(g4_particle);
             DT_LOG_TRACE(_logprio(), "Found a nucleus: " << g4_particle_name
@@ -546,7 +555,11 @@ namespace mctools {
                           message.str().c_str());
             }
             g4_particle =
+#if G4VERSION_NUMBER < 1000
               G4ParticleTable::GetParticleTable()->GetIon(Z, A, excitation_energy);
+#else
+              G4IonTable::GetIonTable()->GetIon(Z, A, excitation_energy);
+#endif
             g4_particle_name = g4_particle->GetParticleName();
             _particle_gun_->SetParticleDefinition(g4_particle);
             // QUESTION: WHAT IS THE RIGHT WAY TO SET THE EFFECTIVE ION CHARGE ???

@@ -106,22 +106,32 @@ namespace mctools {
       return _with_spin_;
     }
 
+#if G4VERSION_NUMBER < 1000
     void em_field_equation_of_motion::SetChargeMomentumMass(G4double particle_charge_, // in e+ units
                                                             G4double particle_momentum_,
                                                             G4double particle_mass_)
+#else
+    void em_field_equation_of_motion::SetChargeMomentumMass(G4ChargeState particle_charge_,
+                                                            G4double particle_momentum_,
+                                                            G4double particle_mass_)
+#endif
     {
       DT_LOG_TRACE_ENTERING(_logprio());
-
-      DT_LOG_DEBUG(_logprio(),
-                   " -> Particle charge = " << particle_charge_ / CLHEP::eplus << "e ");
-      DT_LOG_DEBUG(_logprio(),
-                   " -> Momentum = " << particle_momentum_ / CLHEP::MeV << " MeV");
-      DT_LOG_DEBUG(_logprio(),
-                   " -> Mass = " << particle_mass_ / CLHEP::MeV << " MeV");
-
-      _mass_ = particle_mass_;
+#if G4VERSION_NUMBER < 1000
       _charge_ = particle_charge_;
+#else
+      _charge_ = particle_charge_.GetCharge();
+#endif
+      _mass_ = particle_mass_;
       _momentum_ = particle_momentum_;
+
+      DT_LOG_DEBUG(_logprio(),
+                   " -> Particle charge = " << _charge_ / CLHEP::eplus << "e ");
+      DT_LOG_DEBUG(_logprio(),
+                   " -> Momentum = " << _momentum_ / CLHEP::MeV << " MeV");
+      DT_LOG_DEBUG(_logprio(),
+                   " -> Mass = " << _mass_ / CLHEP::MeV << " MeV");
+
 
       _charge_coef_ = CLHEP::eplus * _charge_ * CLHEP::c_light;
       _mass_sqr_ = _mass_ * _mass_;

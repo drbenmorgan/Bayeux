@@ -19,6 +19,7 @@
 // Third party:
 // - Geant4:
 #include <G4EquationOfMotion.hh>
+#include <G4Version.hh>
 
 // This project:
 #include <mctools/g4/loggable_support.h>
@@ -86,9 +87,15 @@ namespace mctools {
 
       /// Set the charge, momentum and mass of the current particle
       /// used to set the equation's coefficients
+#if G4VERSION_NUMBER < 1000
       void SetChargeMomentumMass(G4double particle_charge_, // in e+ units
                                  G4double particle_momentum_,
                                  G4double particle_mass_);
+#else
+      void SetChargeMomentumMass(G4ChargeState particleCharge,
+                                 G4double MomentumXc,
+                                 G4double MassXc2);
+#endif
 
       /// Set the magnetic anomaly of the particle
       void set_anomaly(double a_);

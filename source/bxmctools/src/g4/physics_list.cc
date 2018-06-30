@@ -30,7 +30,13 @@
 #include <G4ProductionCuts.hh>
 #include <G4RegionStore.hh>
 #include <G4PhysListFactory.hh>
+
+#include <G4Version.hh>
+#if G4VERSION_NUMBER < 1000
 #include <G4StepLimiterBuilder.hh>
+#else
+#include <G4StepLimiterPhysics.hh>
+#endif
 
 namespace mctools {
 
@@ -587,7 +593,11 @@ namespace mctools {
 
       if (has_geant4_physics_list()) {
         grab_geant4_physics_list().ConstructProcess();
+#if G4VERSION_NUMBER < 1000
         grab_geant4_physics_list().RegisterPhysics(new G4StepLimiterBuilder());
+#else
+        grab_geant4_physics_list().RegisterPhysics(new G4StepLimiterPhysics());
+#endif
       } else {
         this->G4VModularPhysicsList::ConstructProcess();
       }
