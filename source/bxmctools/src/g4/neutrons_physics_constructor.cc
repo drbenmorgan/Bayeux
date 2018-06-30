@@ -37,23 +37,46 @@
 #include <G4ShortLivedConstructor.hh>
 #include <G4IonConstructor.hh>
 // Hadronic processes:
+#include <G4TheoFSGenerator.hh>
+#include <G4QGSModel.hh>
+#include <G4QGSMFragmentation.hh>
+#include <G4GeneratorPrecompoundInterface.hh>
+
 #include <G4CascadeInterface.hh>
 #include <G4HadronElasticProcess.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4LElastic.hh>
+#include <G4LCapture.hh>
+#else
+#include <G4NeutronRadCapture.hh>
+#endif
+
 #include <G4NeutronInelasticProcess.hh>
 #include <G4BinaryCascade.hh>
 #include <G4HadronCaptureProcess.hh>
-#include <G4LCapture.hh>
 #include <G4HadronFissionProcess.hh>
 #include <G4LFission.hh>
 #include <G4NucleonNuclearCrossSection.hh>
 #include <G4ExcitedStringDecay.hh>
 #include <G4LundStringFragmentation.hh>
+
 #include <G4ProtonInelasticProcess.hh>
+#if G4VERSION_NUMBER < 1000
 #include <G4HEProtonInelastic.hh>
 #include <G4LEProtonInelastic.hh>
+#else
+#include <G4BGGNucleonInelasticXS.hh>
+#endif
+
 #include <G4NeutronHPElasticData.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4NeutronHPorLElasticModel.hh>
+#else
+//???
+#endif
+
 #include <G4NeutronHPCapture.hh>
 #include <G4NeutronHPCaptureData.hh>
 #include <G4NeutronHPFission.hh>
@@ -62,13 +85,30 @@
 #include <G4NeutronHPInelasticData.hh>
 #include <G4NeutronHPThermalScattering.hh>
 #include <G4NeutronHPThermalScatteringData.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4LENeutronInelastic.hh>
+#else
+//????
+#endif
+
 #include <G4ElectronNuclearProcess.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4ElectroNuclearReaction.hh>
+#else
+#include <G4ElectroVDNuclearModel.hh>
+#endif
+
 #include <G4HadronElastic.hh>
 #include <G4HadronElasticProcess.hh>
 #include <G4PhotoNuclearProcess.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4GammaNuclearReaction.hh>
+#else
+//???
+#endif
 
 /*
   QGSP_BERT contents:
@@ -278,38 +318,33 @@ namespace mctools {
       DT_THROW_IF (! is_initialized(), std::logic_error, "Not initialized !");
 
       // standard part - elastic - all hadrons but neutrons
-      G4HadronElastic * hadrons_elastic_model
-        = new G4HadronElastic();
-      G4HadronElasticProcess * hadrons_elastic_process
-        = new G4HadronElasticProcess();
+      G4HadronElastic* hadrons_elastic_model = new G4HadronElastic();
+      G4HadronElasticProcess* hadrons_elastic_process = new G4HadronElasticProcess();
       hadrons_elastic_process->RegisterMe (hadrons_elastic_model);
 
       // High-energy model for p, n
-      G4TheoFSGenerator * QGSP_model
-        = new G4TheoFSGenerator ("QGSP");
-      G4GeneratorPrecompoundInterface * the_cascade
-        = new G4GeneratorPrecompoundInterface();
-      G4ExcitationHandler * the_handler
-        = new G4ExcitationHandler();
-      G4PreCompoundModel * the_pre_equilib
-        = new G4PreCompoundModel(the_handler);
-      the_cascade->SetDeExcitation(the_pre_equilib);
-      QGSP_model->SetTransport(the_cascade);
-
-      G4QGSMFragmentation * QGSM_fragmentation
-        = new G4QGSMFragmentation();
-      G4ExcitedStringDecay * the_string_decay
-        = new G4ExcitedStringDecay(QGSM_fragmentation);
-      G4QGSModel<G4QGSParticipants> * the_string_model
-        = new G4QGSModel<G4QGSParticipants>;
+      // See Geant4's G4QGSPProtonBuilder and similar...
+      // .. try and order things as in it's constructor
+      G4TheoFSGenerator* QGSP_model = new G4TheoFSGenerator ("QGSP");
+      G4QGSModel<G4QGSParticipants>* the_string_model = new G4QGSModel<G4QGSParticipants>;
+      G4ExcitedStringDecay* the_string_decay = new G4ExcitedStringDecay(new G4QGSMFragmentation);
       the_string_model->SetFragmentationModel (the_string_decay);
-      QGSP_model->SetHighEnergyGenerator (the_string_model);
+
+      G4GeneratorPrecompoundInterface* the_cascade = new G4GeneratorPrecompoundInterface();
+      G4PreCompoundModel* the_pre_equilib = new G4PreCompoundModel(new G4ExcitationHandler);
+      the_cascade->SetDeExcitation(the_pre_equilib);
+
+      QGSP_model->SetTransport(the_cascade);
+      QGSP_model->SetHighEnergyGenerator(the_string_model);
+      //... Do not have option to add QuasiElastic or projectileDiffraction
+      // These are identical to QGSPProtonBuilder
       QGSP_model->SetMinEnergy (11.9*CLHEP::GeV);
       QGSP_model->SetMaxEnergy (100.*CLHEP::TeV);
 
+
       // High-energy model for photons
-      G4TheoFSGenerator * the_HE_model
-        = new G4TheoFSGenerator();
+      // Appears to be as in G4BertiniElectroNuclearBuilder
+      G4TheoFSGenerator * the_HE_model = new G4TheoFSGenerator();
       the_string_model = new G4QGSModel<G4QGSParticipants>;
       the_HE_model->SetTransport(the_cascade);
       the_HE_model->SetHighEnergyGenerator(the_string_model);
@@ -317,182 +352,249 @@ namespace mctools {
       the_HE_model->SetMaxEnergy(100*CLHEP::TeV);
 
       // particles iteration
-      theParticleIterator->reset();
-      while( (*theParticleIterator)() )
+      // Only need to proton/neutron/e-/gamma, so no need for iteration
+      //
+      G4ProcessManager* pManager = 0;
+
+      // Neutrons
+      pManager = G4Neutron::Neutron()->GetProcessManager();
+      {
+        // Neutron scope
+        // inelastic process
+        if (_use_neutrons_inelastic_process_)
         {
-          G4ParticleDefinition * particle = theParticleIterator->value();
-          G4ProcessManager     * pmanager = particle->GetProcessManager();
-          G4String               pname    = particle->GetParticleName();
 
-          // neutrons
-          if (pname == "neutron")
-            {
-              // inelastic process
-              if (_use_neutrons_inelastic_process_)
-                {
-                  G4NeutronInelasticProcess * the_neutron_inelastic_process
-                    = new G4NeutronInelasticProcess();
+// http://hypernews.slac.stanford.edu/HyperNews/geant4/get/phys-list/828/1.html
+// In LBE, in 9.6.4, we have:
+  // elastic scattering
+//718   G4HadronElasticProcess* theNeutronElasticProcess = new G4HadronElasticProcess;
+//720   G4LElastic* theElasticModel1 = new G4LElastic;
+//721   G4NeutronHPElastic * theElasticNeutron = new G4NeutronHPElastic;
+//722   theNeutronElasticProcess->RegisterMe(theElasticModel1);
+//723   theElasticModel1->SetMinEnergy(19*CLHEP::MeV);
+//724   theNeutronElasticProcess->RegisterMe(theElasticNeutron);
+//725   G4NeutronHPElasticData * theNeutronData = new G4NeutronHPElasticData;
+//726   theNeutronElasticProcess->AddDataSet(theNeutronData);
+//727   pmanager->AddDiscreteProcess(theNeutronElasticProcess);
+//
+//741   // capture
+//742   G4HadronCaptureProcess* theCaptureProcess = new G4HadronCaptureProcess;
+//744   G4LCapture* theCaptureModel = new G4LCapture;
+//745   theCaptureModel->SetMinEnergy(19*CLHEP::MeV);
+//746   theCaptureProcess->RegisterMe(theCaptureModel);
+//747   G4NeutronHPCapture * theLENeutronCaptureModel = new G4NeutronHPCapture;
+//748   theCaptureProcess->RegisterMe(theLENeutronCaptureModel);
+//749   G4NeutronHPCaptureData * theNeutronData3 = new G4NeutronHPCaptureData;
+//750   theCaptureProcess->AddDataSet(theNeutronData3);
+//751   pmanager->AddDiscreteProcess(theCaptureProcess);
+//
+// In 10.0, it's
+//  // elastic scattering
+//768   G4HadronElasticProcess* theElasticProcess = new G4HadronElasticProcess;
+//769   theElasticProcess->AddDataSet(G4CrossSectionDataSetRegistry::Instance()->GetCrossSectionDataSet(G4ChipsNeutronElasticXS::Default_Name()));
+//770   G4HadronElastic* elastic_neutronChipsModel = new G4ChipsElasticModel();
+//771   elastic_neutronChipsModel->SetMinEnergy( 19.0*CLHEP::MeV );
+//772   theElasticProcess->RegisterMe( elastic_neutronChipsModel );
+//773   G4NeutronHPElastic * theElasticNeutronHP = new G4NeutronHPElastic;
+//774   theElasticNeutronHP->SetMinEnergy( theHPMin );
+//775   theElasticNeutronHP->SetMaxEnergy( theHPMax );
+//776   theElasticProcess->RegisterMe( theElasticNeutronHP );
+//777   theElasticProcess->AddDataSet( new G4NeutronHPElasticData );
+//778   pmanager->AddDiscreteProcess( theElasticProcess );
+//
+//790   // capture
+//791   G4HadronCaptureProcess* theCaptureProcess = new G4HadronCaptureProcess;
+//792   G4NeutronHPCapture * theNeutronCaptureHPModel = new G4NeutronHPCapture;
+//793   theNeutronCaptureHPModel->SetMinEnergy( theHPMin );
+//794   theNeutronCaptureHPModel->SetMaxEnergy( theHPMax );
+//795   theCaptureProcess->RegisterMe( theNeutronCaptureHPModel );
+//796   theCaptureProcess->AddDataSet( new G4NeutronHPCaptureData );
+//797   pmanager->AddDiscreteProcess(theCaptureProcess);
+//798       }
+//
+//
+          G4NeutronInelasticProcess* the_neutron_inelastic_process = new G4NeutronInelasticProcess();
+          if (_use_HE_) {
+#if G4VERSION_NUMBER < 1000
+            G4LENeutronInelastic* the_intermediate_energy_neutron_inelastic_model = 0;
+            the_intermediate_energy_neutron_inelastic_model = new G4LENeutronInelastic();
+            the_intermediate_energy_neutron_inelastic_model->SetMinEnergy (9.5*CLHEP::GeV);
+            the_intermediate_energy_neutron_inelastic_model->SetMaxEnergy (25.*CLHEP::GeV);
+            the_neutron_inelastic_process->RegisterMe (the_intermediate_energy_neutron_inelastic_model);
+#else
+            the_neutron_inelastic_process->AddDataSet(new G4BGGNucleonInelasticXS(G4Neutron::Neutron()));
+#endif
+          }
+          G4NeutronHPInelastic* the_low_energy_neutron_inelastic_model = new G4NeutronHPInelastic();
+          the_low_energy_neutron_inelastic_model->SetMaxEnergy(20.*CLHEP::MeV);
+          the_neutron_inelastic_process->RegisterMe (the_low_energy_neutron_inelastic_model);
 
-                  G4CascadeInterface * the_bertini_model = 0;
-                  if (_use_HE_) {
-                   the_bertini_model = new G4CascadeInterface();
-                   the_bertini_model->SetMinEnergy (19.9*CLHEP::MeV);
-                   the_bertini_model->SetMaxEnergy (9.9*CLHEP::GeV);
-                  }
-                  G4NeutronHPInelastic * the_low_energy_neutron_inelastic_model
-                    = new G4NeutronHPInelastic();
-                  the_low_energy_neutron_inelastic_model->SetMaxEnergy (20.*CLHEP::MeV);
-                  G4LENeutronInelastic * the_intermediate_energy_neutron_inelastic_model = 0;
-                  if (_use_HE_) {
-                    the_intermediate_energy_neutron_inelastic_model = new G4LENeutronInelastic();
-                    the_intermediate_energy_neutron_inelastic_model->SetMinEnergy (9.5*CLHEP::GeV);
-                    the_intermediate_energy_neutron_inelastic_model->SetMaxEnergy (25.*CLHEP::GeV);
-                  }
-                  G4NeutronHPInelasticData * the_HP_inelastic_data
-                    = new G4NeutronHPInelasticData();
-                  the_neutron_inelastic_process->AddDataSet (the_HP_inelastic_data);
+          G4NeutronHPInelasticData* the_HP_inelastic_data = new G4NeutronHPInelasticData();
+          the_neutron_inelastic_process->AddDataSet(the_HP_inelastic_data);
 
-                  if (_use_HE_) QGSP_model->SetMinEnergy (11.9*CLHEP::GeV);
+          //G4CascadeInterface* the_bertini_model = 0;
+          if (_use_HE_) {
+            G4CascadeInterface* the_bertini_model = new G4CascadeInterface();
+            the_bertini_model->SetMinEnergy(19.9*CLHEP::MeV);
+            the_bertini_model->SetMaxEnergy(9.9*CLHEP::GeV);
+            the_neutron_inelastic_process->RegisterMe (the_bertini_model);
 
-                  if (_use_HE_) the_neutron_inelastic_process->RegisterMe (QGSP_model);
-                  if (_use_HE_) the_neutron_inelastic_process->RegisterMe (the_bertini_model);
-                  the_neutron_inelastic_process->RegisterMe (the_low_energy_neutron_inelastic_model);
-                  if (_use_HE_) the_neutron_inelastic_process->RegisterMe (the_intermediate_energy_neutron_inelastic_model);
-                  pmanager->AddDiscreteProcess (the_neutron_inelastic_process);
-                }
-              // elastic process
-              if (_use_neutrons_elastic_process_)
-                {
-                  G4HadronElasticProcess * the_neutron_elastic_process
-                    = new G4HadronElasticProcess();
-                  G4NeutronHPorLElasticModel * the_neutron_elastic_model
-                    = new G4NeutronHPorLElasticModel();
-                  the_neutron_elastic_model->SetMinEnergy (4.*CLHEP::eV);
-                  the_neutron_elastic_model->SetMaxEnergy (20*CLHEP::MeV);
-                  G4NeutronHPThermalScattering * the_neutron_thermal_elastic_model
-                    = new G4NeutronHPThermalScattering();
-                  the_neutron_thermal_elastic_model->SetMaxEnergy (4.*CLHEP::eV);
+            QGSP_model->SetMinEnergy (11.9*CLHEP::GeV);
+            the_neutron_inelastic_process->RegisterMe (QGSP_model);
+          }
 
-                  G4LElastic * the_high_energy_neutron_elastic_model = 0;
-                  if (_use_HE_) {
-                    the_high_energy_neutron_elastic_model = new G4LElastic();
-                    the_high_energy_neutron_elastic_model->SetMinEnergy (19.5*CLHEP::MeV);
-                    the_high_energy_neutron_elastic_model->SetMaxEnergy (10.*CLHEP::TeV);
-                  }
-
-                  G4NeutronHPElasticData * the_HP_elastic_data
-                    = new G4NeutronHPElasticData();
-                  G4NeutronHPThermalScatteringData * the_HP_thermal_scattering_data
-                    = new G4NeutronHPThermalScatteringData();
-                  the_neutron_elastic_process->AddDataSet (the_neutron_elastic_model->GiveHPXSectionDataSet());
-                  the_neutron_elastic_process->AddDataSet (the_HP_elastic_data);
-                  the_neutron_elastic_process->AddDataSet (the_HP_thermal_scattering_data);
-
-                  the_neutron_elastic_process->RegisterMe(the_neutron_elastic_model);
-                  the_neutron_elastic_process->RegisterMe(the_neutron_thermal_elastic_model);
-                  if (_use_HE_) the_neutron_elastic_process->RegisterMe(the_high_energy_neutron_elastic_model);
-                  pmanager->AddDiscreteProcess( the_neutron_elastic_process );
-                }
-              // capture
-              if (_use_neutrons_capture_)
-                {
-                  G4HadronCaptureProcess * the_neutron_capture_process
-                    = new G4HadronCaptureProcess();
-                  G4NeutronHPCaptureData * the_HP_capture_data
-                    = new G4NeutronHPCaptureData();
-                  G4NeutronHPCapture * the_neutron_capture_model
-                    = new G4NeutronHPCapture();
-                  G4LCapture * the_capture_model = new G4LCapture();
-                  the_capture_model->SetMinEnergy (19.9*CLHEP::MeV);
-                  the_capture_model->SetMaxEnergy (20.*CLHEP::TeV);
-                  the_neutron_capture_process->AddDataSet (the_HP_capture_data);
-
-                  the_neutron_capture_process->RegisterMe (the_neutron_capture_model);
-                  the_neutron_capture_process->RegisterMe (the_capture_model);
-                  pmanager->AddDiscreteProcess (the_neutron_capture_process);
-                }
-              // fission
-              if (_use_neutrons_fission_)
-                {
-                  G4HadronFissionProcess * the_neutron_fission_process
-                    = new G4HadronFissionProcess();
-                  G4NeutronHPFission * the_neutron_fission_model
-                    = new G4NeutronHPFission();
-                  G4NeutronHPFissionData * the_fission_data
-                    = new G4NeutronHPFissionData();
-                  G4LFission * the_fission_model
-                    = new G4LFission();
-                  the_fission_model->SetMinEnergy (19.9*CLHEP::MeV);
-                  the_fission_model->SetMaxEnergy (20.*CLHEP::TeV);
-                  the_neutron_fission_process->AddDataSet (the_fission_data);
-
-                  the_neutron_fission_process->RegisterMe (the_neutron_fission_model);
-                  the_neutron_fission_process->RegisterMe (the_fission_model);
-                  pmanager->AddDiscreteProcess (the_neutron_fission_process);
-                }
-            }
-
-          // protons
-          if (pname == "proton")
-            {
-              // inelastic process
-              if (_use_protons_inelastic_process_)
-                {
-                  G4ProtonInelasticProcess * the_proton_inelastic_process
-                    = new G4ProtonInelasticProcess();
-                  G4CascadeInterface * the_bertini_model = new G4CascadeInterface();
-                  the_bertini_model->SetMinEnergy (0.*CLHEP::MeV);
-                  the_bertini_model->SetMaxEnergy (10.*CLHEP::GeV);
-                  G4LEProtonInelastic * the_high_energy_proton_inelastic_model = 0;
-                  if (_use_HE_) {
-                    the_high_energy_proton_inelastic_model = new G4LEProtonInelastic();
-                    the_high_energy_proton_inelastic_model->SetMinEnergy (9.5*CLHEP::GeV);
-                    the_high_energy_proton_inelastic_model->SetMaxEnergy (25.*CLHEP::GeV);
-                    QGSP_model->SetMinEnergy (11.9*CLHEP::GeV);
-                  }
-
-                  if (_use_HE_) the_proton_inelastic_process->RegisterMe (QGSP_model);
-                  the_proton_inelastic_process->RegisterMe (the_bertini_model);
-                  if (_use_HE_) the_proton_inelastic_process->RegisterMe (the_high_energy_proton_inelastic_model);
-                  pmanager->AddDiscreteProcess (the_proton_inelastic_process);
-                }
-              // elastic process
-              if (_use_protons_elastic_process_)
-                {
-                  pmanager->AddDiscreteProcess(hadrons_elastic_process);
-                }
-            }
-
-          // electrons
-          if (pname == "e-")
-            {
-              if (_use_electrons_hadronic_process_)
-                {
-                  G4ElectronNuclearProcess * the_electron_inelastic_process
-                    = new G4ElectronNuclearProcess();
-                  G4ElectroNuclearReaction * the_electron_nuclear_reaction
-                    = new G4ElectroNuclearReaction();
-                  the_electron_inelastic_process->RegisterMe (the_electron_nuclear_reaction);
-                  pmanager->AddProcess (the_electron_inelastic_process, -1, -1, 5);
-                }
-            }
-
-          // gamma
-          if (pname == "gamma")
-            {
-              if (_use_gammas_hadronic_process_)
-                {
-                  G4PhotoNuclearProcess * the_gamma_hadron_process
-                    = new G4PhotoNuclearProcess();
-                  G4GammaNuclearReaction * the_gamma_nuclear_reaction
-                    = new G4GammaNuclearReaction();
-                  the_gamma_nuclear_reaction->SetMaxEnergy(3.5*CLHEP::GeV);
-                  the_gamma_hadron_process->RegisterMe (the_gamma_nuclear_reaction);
-                  the_gamma_hadron_process->RegisterMe (the_HE_model);
-                  pmanager->AddDiscreteProcess (the_gamma_hadron_process);
-                }
-            }
+          pManager->AddDiscreteProcess(the_neutron_inelastic_process);
         }
+        // elastic process
+        if (_use_neutrons_elastic_process_)
+        {
+          G4HadronElasticProcess* the_neutron_elastic_process = new G4HadronElasticProcess();
+
+          // NEEDS REPLACEMENT in 10.4
+          //G4NeutronHPorLElasticModel* the_neutron_elastic_model = new G4NeutronHPorLElasticModel();
+          //the_neutron_elastic_model->SetMinEnergy (4.*CLHEP::eV);
+          //the_neutron_elastic_model->SetMaxEnergy (20*CLHEP::MeV);
+          //the_neutron_elastic_process->RegisterMe(the_neutron_elastic_model);
+
+          G4NeutronHPThermalScattering* the_neutron_thermal_elastic_model = new G4NeutronHPThermalScattering();
+          the_neutron_thermal_elastic_model->SetMaxEnergy(4.*CLHEP::eV);
+
+#if G4VERSION_NUMBER < 1000
+          G4LElastic * the_high_energy_neutron_elastic_model = 0;
+#else
+          G4HadronElastic* the_high_energy_neutron_elastic_model = 0;
+#endif
+          if (_use_HE_) {
+#if G4VERSION_NUMBER < 1000
+            the_high_energy_neutron_elastic_model = new G4LElastic();
+#else
+            the_high_energy_neutron_elastic_model = new G4HadronElastic();
+#endif
+            the_high_energy_neutron_elastic_model->SetMinEnergy (19.5*CLHEP::MeV);
+            the_high_energy_neutron_elastic_model->SetMaxEnergy (10.*CLHEP::TeV);
+          }
+
+          G4NeutronHPElasticData* the_HP_elastic_data = new G4NeutronHPElasticData();
+          G4NeutronHPThermalScatteringData* the_HP_thermal_scattering_data = new G4NeutronHPThermalScatteringData();
+          //the_neutron_elastic_process->AddDataSet(the_neutron_elastic_model->GiveHPXSectionDataSet());
+          the_neutron_elastic_process->AddDataSet(the_HP_elastic_data);
+          the_neutron_elastic_process->AddDataSet(the_HP_thermal_scattering_data);
+
+          the_neutron_elastic_process->RegisterMe(the_neutron_thermal_elastic_model);
+          if (_use_HE_)
+          {
+            the_neutron_elastic_process->RegisterMe(the_high_energy_neutron_elastic_model);
+          }
+          pManager->AddDiscreteProcess( the_neutron_elastic_process );
+        }
+        // capture
+        if (_use_neutrons_capture_)
+        {
+          G4HadronCaptureProcess* the_neutron_capture_process = new G4HadronCaptureProcess();
+          G4NeutronHPCaptureData* the_HP_capture_data = new G4NeutronHPCaptureData();
+          G4NeutronHPCapture* the_neutron_capture_model = new G4NeutronHPCapture();
+#if G4VERSION_NUMBER < 1000
+          G4LCapture * the_capture_model = new G4LCapture();
+#else
+          G4NeutronRadCapture* the_capture_model = new G4NeutronRadCapture();
+#endif
+          the_capture_model->SetMinEnergy(19.9*CLHEP::MeV);
+          the_capture_model->SetMaxEnergy(20.*CLHEP::TeV);
+          the_neutron_capture_process->AddDataSet(the_HP_capture_data);
+
+          the_neutron_capture_process->RegisterMe(the_neutron_capture_model);
+          the_neutron_capture_process->RegisterMe(the_capture_model);
+
+          pManager->AddDiscreteProcess(the_neutron_capture_process);
+        }
+        // fission
+        if (_use_neutrons_fission_)
+        {
+          G4HadronFissionProcess* the_neutron_fission_process = new G4HadronFissionProcess();
+          G4NeutronHPFission* the_neutron_fission_model = new G4NeutronHPFission();
+          G4NeutronHPFissionData* the_fission_data = new G4NeutronHPFissionData();
+          G4LFission* the_fission_model = new G4LFission();
+          the_fission_model->SetMinEnergy(19.9*CLHEP::MeV);
+          the_fission_model->SetMaxEnergy(20.*CLHEP::TeV);
+          the_neutron_fission_process->AddDataSet(the_fission_data);
+
+          the_neutron_fission_process->RegisterMe(the_neutron_fission_model);
+          the_neutron_fission_process->RegisterMe(the_fission_model);
+          pManager->AddDiscreteProcess(the_neutron_fission_process);
+        }
+      }
+
+      // Protons
+      pManager = G4Proton::Proton()->GetProcessManager();
+      {
+        // Proton scope
+        // inelastic process
+        if (_use_protons_inelastic_process_)
+        {
+          G4ProtonInelasticProcess* the_proton_inelastic_process = new G4ProtonInelasticProcess();
+          G4CascadeInterface* the_bertini_model = new G4CascadeInterface();
+          the_bertini_model->SetMinEnergy (0.*CLHEP::MeV);
+          the_bertini_model->SetMaxEnergy (10.*CLHEP::GeV);
+          the_proton_inelastic_process->RegisterMe(the_bertini_model);
+
+          if (_use_HE_) {
+#if G4VERSION_NUMBER < 1000
+            G4LEProtonInelastic* the_high_energy_proton_inelastic_model = new G4LEProtonInelastic();
+            the_high_energy_proton_inelastic_model->SetMinEnergy (9.5*CLHEP::GeV);
+            the_high_energy_proton_inelastic_model->SetMaxEnergy (25.*CLHEP::GeV);
+            the_proton_inelastic_process->RegisterMe (the_high_energy_proton_inelastic_model);
+#else
+            the_proton_inelastic_process->AddDataSet(new G4BGGNucleonInelasticXS(G4Proton::Proton()));
+#endif
+            QGSP_model->SetMinEnergy(11.9*CLHEP::GeV);
+            the_proton_inelastic_process->RegisterMe(QGSP_model);
+          }
+
+          pManager->AddDiscreteProcess (the_proton_inelastic_process);
+        }
+        // elastic process
+        if (_use_protons_elastic_process_)
+        {
+          pManager->AddDiscreteProcess(hadrons_elastic_process);
+        }
+      }
+
+      // Electrons
+      pManager = G4Electron::Electron()->GetProcessManager();
+      {
+        // Electron scope
+        if (_use_electrons_hadronic_process_)
+        {
+          G4ElectronNuclearProcess* the_electron_inelastic_process = new G4ElectronNuclearProcess();
+#if G4VERSION_NUMBER < 1000
+          the_electron_inelastic_process->RegisterMe(new G4ElectroNuclearReaction);
+#else
+          the_electron_inelastic_process->RegisterMe(new G4ElectroVDNuclearModel);
+#endif
+          pManager->AddProcess(the_electron_inelastic_process, -1, -1, 5);
+        }
+      }
+
+      // Gammas
+      pManager = G4Gamma::Gamma()->GetProcessManager();
+      {
+        // Gamma scope
+        if (_use_gammas_hadronic_process_)
+        {
+          G4PhotoNuclearProcess* the_gamma_hadron_process = new G4PhotoNuclearProcess();
+#if G4VERSION_NUMBER < 1000
+          G4GammaNuclearReaction* the_gamma_nuclear_reaction = new G4GammaNuclearReaction();
+#else
+          G4CascadeInterface* the_gamma_nuclear_reaction = new G4CascadeInterface();
+          // NB, may also need model here....
+#endif
+          the_gamma_nuclear_reaction->SetMaxEnergy(3.5*CLHEP::GeV);
+          the_gamma_hadron_process->RegisterMe(the_gamma_nuclear_reaction);
+          the_gamma_hadron_process->RegisterMe(the_HE_model);
+          pManager->AddDiscreteProcess(the_gamma_hadron_process);
+        }
+      }
+
       return;
     }
 
