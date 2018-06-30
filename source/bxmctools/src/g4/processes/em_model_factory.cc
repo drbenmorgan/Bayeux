@@ -16,6 +16,8 @@
 #pragma clang diagnostic pop
 #endif
 
+#include "G4Version.hh"
+
 // EM standard model:
 #include <G4BraggIonModel.hh>
 #include <G4ICRU73QOModel.hh>
@@ -23,32 +25,53 @@
 #include <G4hCoulombScatteringModel.hh>
 #include <G4WentzelVIRelModel.hh>
 #include <G4BetheBlochModel.hh>
+
+#if G4VERSION_NUMBER < 1000
+#include <G4UrbanMscModel90.hh>
+#include <G4UrbanMscModel92.hh>
 #include <G4UrbanMscModel93.hh>
-#include <G4eBremParametrizedModel.hh>
-#include <G4PAIModel.hh>
-#include <G4WentzelVIModel.hh>
+#include <G4UrbanMscModel95.hh>
 #include <G4UrbanMscModel96.hh>
+#else
+#include <G4UrbanMscModel.hh>
+#endif
+
+#include <G4eBremParametrizedModel.hh>
+
+#include <G4PAIModel.hh>
+
+#if G4VERSION_NUMBER < 1000
+#include <G4PAIPhotonModel.hh>
+#else
+#include <G4PAIPhotModel.hh>
+#endif
+
+#include <G4WentzelVIModel.hh>
 #include <G4XrayRayleighModel.hh>
 #include <G4BetheHeitlerModel.hh>
 #include <G4eBremsstrahlungRelModel.hh>
-#include <G4UrbanMscModel92.hh>
 #include <G4KleinNishinaModel.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4eBremsstrahlungModel.hh>
+#endif
+#include <G4SeltzerBergerModel.hh>
+
 #include <G4IonCoulombScatteringModel.hh>
 #include <G4PairProductionRelModel.hh>
 #include <G4eeToTwoGammaModel.hh>
 #include <G4eCoulombScatteringModel.hh>
 #include <G4MollerBhabhaModel.hh>
 #include <G4BraggIonGasModel.hh>
-#include <G4UrbanMscModel95.hh>
 #include <G4BraggModel.hh>
 #include <G4GoudsmitSaundersonMscModel.hh>
-#include <G4PAIPhotonModel.hh>
-#include <G4SeltzerBergerModel.hh>
+
+#if G4VERSION_NUMBER < 1000
 #include <G4PEEffectModel.hh>
-#include <G4UrbanMscModel90.hh>
-#include <G4ICRU49NuclearStoppingModel.hh>
+#endif
 #include <G4PEEffectFluoModel.hh>
+
+#include <G4ICRU49NuclearStoppingModel.hh>
 #include <G4eSingleCoulombScatteringModel.hh>
 
 // Bayeux/datatools:
@@ -207,30 +230,59 @@ namespace mctools {
         _reg_.registration("hCoulombScattering", boost::factory<G4hCoulombScatteringModel*>());
         _reg_.registration("WentzelVIRel", boost::factory<G4WentzelVIRelModel*>());
         _reg_.registration("BetheBloch", boost::factory<G4BetheBlochModel*>());
+#if G4VERSION_NUMBER < 1000
+        _reg_.registration("UrbanMsc90", boost::factory<G4UrbanMscModel90*>());
+        _reg_.registration("UrbanMsc92", boost::factory<G4UrbanMscModel92*>());
         _reg_.registration("UrbanMsc93", boost::factory<G4UrbanMscModel93*>());
-        _reg_.registration("eBremParametrized", boost::factory<G4eBremParametrizedModel*>());
-        _reg_.registration("PAI", boost::factory<G4PAIModel*>());
-        _reg_.registration("WentzelVI", boost::factory<G4WentzelVIModel*>());
+        _reg_.registration("UrbanMsc95", boost::factory<G4UrbanMscModel95*>());
         _reg_.registration("UrbanMsc96", boost::factory<G4UrbanMscModel96*>());
+#else
+        _reg_.registration("UrbanMsc90", boost::factory<G4UrbanMscModel*>());
+        _reg_.registration("UrbanMsc92", boost::factory<G4UrbanMscModel*>());
+        _reg_.registration("UrbanMsc93", boost::factory<G4UrbanMscModel*>());
+        _reg_.registration("UrbanMsc95", boost::factory<G4UrbanMscModel*>());
+        _reg_.registration("UrbanMsc96", boost::factory<G4UrbanMscModel*>());
+#endif
+        _reg_.registration("eBremParametrized", boost::factory<G4eBremParametrizedModel*>());
+
+        _reg_.registration("PAI", boost::factory<G4PAIModel*>());
+        // Use recommended "G4PAIPhotModel" in 10.0 and newer (Photonmodel
+        // removed in 10.2)
+#if G4VERSION_NUMBER < 1000
+        _reg_.registration("PAIPhoton", boost::factory<G4PAIPhotonModel*>());
+#else
+        _reg_.registration("PAIPhoton", boost::factory<G4PAIPhotModel*>());
+#endif
+
+        _reg_.registration("WentzelVI", boost::factory<G4WentzelVIModel*>());
         _reg_.registration("XrayRayleigh", boost::factory<G4XrayRayleighModel*>());
         _reg_.registration("BetheHeitler", boost::factory<G4BetheHeitlerModel*>());
         _reg_.registration("eBremsstrahlungRel", boost::factory<G4eBremsstrahlungRelModel*>());
-        _reg_.registration("UrbanMsc92", boost::factory<G4UrbanMscModel92*>());
         _reg_.registration("KleinNishina", boost::factory<G4KleinNishinaModel*>());
+
+        // SeltzerBerger replaces G4eBremsstrahlungModel in 10.0 and above
+#if G4VERSION_NUMBER < 1000
         _reg_.registration("eBremsstrahlung", boost::factory<G4eBremsstrahlungModel*>());
+#else
+        _reg_.registration("eBremsstrahlung", boost::factory<G4SeltzerBergerModel*>());
+#endif
+        _reg_.registration("SeltzerBerger", boost::factory<G4SeltzerBergerModel*>());
+
         _reg_.registration("IonCoulombScattering", boost::factory<G4IonCoulombScatteringModel*>());
         _reg_.registration("PairProductionRel", boost::factory<G4PairProductionRelModel*>());
         _reg_.registration("eeToTwoGamma", boost::factory<G4eeToTwoGammaModel*>());
         _reg_.registration("eCoulombScattering", boost::factory<G4eCoulombScatteringModel*>());
         _reg_.registration("MollerBhabha", boost::factory<G4MollerBhabhaModel*>());
         _reg_.registration("BraggIonGas", boost::factory<G4BraggIonGasModel*>());
-        _reg_.registration("UrbanMsc95", boost::factory<G4UrbanMscModel95*>());
         _reg_.registration("Bragg", boost::factory<G4BraggModel*>());
         _reg_.registration("GoudsmitSaundersonMsc", boost::factory<G4GoudsmitSaundersonMscModel*>());
-        _reg_.registration("PAIPhoton", boost::factory<G4PAIPhotonModel*>());
-        _reg_.registration("SeltzerBerger", boost::factory<G4SeltzerBergerModel*>());
+
+        // G4PEEffectFluoModel in 10.0 and higher
+#if G4VERSION_NUMBER < 1000
         _reg_.registration("PEEffect", boost::factory<G4PEEffectModel*>());
-        _reg_.registration("UrbanMsc90", boost::factory<G4UrbanMscModel90*>());
+#else
+        _reg_.registration("PEEffect", boost::factory<G4PEEffectFluoModel*>());
+#endif
         _reg_.registration("ICRU49NuclearStopping", boost::factory<G4ICRU49NuclearStoppingModel*>());
         _reg_.registration("PEEffectFluo", boost::factory<G4PEEffectFluoModel*>());
         _reg_.registration("eSingleCoulombScattering", boost::factory<G4eSingleCoulombScatteringModel*>());

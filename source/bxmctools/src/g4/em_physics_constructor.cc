@@ -97,6 +97,17 @@
 #include <G4UserSpecialCuts.hh>
 #include <G4EmConfigurator.hh>
 
+// ParticleIterator adaption
+#include "G4Version.hh"
+#if G4VERSION_NUMBER > 1029
+#define PARTICLEITERATOR (this->GetParticleIterator())
+#elif G4VERSION_NUMBER > 1009
+#define PARTICLEITERATOR aParticleIterator
+#else
+#define PARTICLEITERATOR theParticleIterator
+#endif
+
+
 // This project:
 #include <mctools/g4/processes/em_extra_models.h>
 #include <mctools/g4/processes/em_model_factory.h>
@@ -1000,9 +1011,9 @@ namespace mctools {
     void em_physics_constructor::_ConstructEMProcess()
     {
       DT_LOG_TRACE_ENTERING(_logprio());
-      theParticleIterator->reset();
-      while ((*theParticleIterator)()) {
-        G4ParticleDefinition * particle = theParticleIterator->value();
+      PARTICLEITERATOR->reset();
+      while ((*PARTICLEITERATOR)()) {
+        G4ParticleDefinition * particle = PARTICLEITERATOR->value();
         G4ProcessManager     * pmanager = particle->GetProcessManager();
         G4String particle_name = particle->GetParticleName();
 
