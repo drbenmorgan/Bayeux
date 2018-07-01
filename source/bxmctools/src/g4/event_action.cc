@@ -11,6 +11,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 // - Geant4:
 #include <globals.hh>
+#include <G4Version.hh>
 #include <G4ParticleTable.hh>
 
 // In C++11, no register keyword, remove once updated to G4 10.2
@@ -102,7 +103,6 @@ namespace mctools {
       if (is_initialized ()) {
         reset ();
       }
-      DT_LOG_TRACE(_logprio(), "Done.");
       return;
     }
 
@@ -149,8 +149,6 @@ namespace mctools {
         _save_only_tracked_events_ = config_.fetch_boolean("save_only_tracked_events");
       }
 
-      // end of fetching.
-
       _at_init_();
 
       _initialized_ = true;
@@ -186,8 +184,6 @@ namespace mctools {
 
     void event_action::BeginOfEventAction (const G4Event * event_)
     {
-      DT_LOG_TRACE_ENTERING(_logprio());
-
       G4int event_id = event_->GetEventID();
       DT_LOG_DEBUG(_logprio(), "Event #" << event_id << " starts.");
       if (_run_action_->has_number_of_events_modulo()) {
@@ -216,13 +212,6 @@ namespace mctools {
         return;
       }
 
-      /*
-        if (G4RunManager::GetRunManager ()->runAborted)
-        {
-        G4RunManager::GetRunManager ()->AbortEvent ();
-        }
-      */
-
       bool record_prng_states = true;
       if (record_prng_states) {
         const manager & const_mgr = _run_action_->get_manager();
@@ -246,14 +235,11 @@ namespace mctools {
         _run_action_->grab_manager().grab_CT_map()["EA"].start();
       }
 
-      DT_LOG_TRACE_EXITING(_logprio());
       return;
     }
 
     void event_action::EndOfEventAction (const G4Event * event_)
     {
-      DT_LOG_TRACE_ENTERING(_logprio());
-
       if (_run_action_->get_manager().using_time_stat()) {
         _run_action_->grab_manager().grab_CT_map()["EA"].stop();
       }
@@ -267,8 +253,6 @@ namespace mctools {
 
       if (is_killed_event()) {
         DT_LOG_DEBUG(_logprio(), "Event #" << event_id << " is killed and thus not tracked!");
-        // grab_event_data().grab_properties().store_flag(mctools::biasing::primary_event_bias::biased_event_status_key(),
-        //                                                mctools::biasing::primary_event_bias::killed_event_label());
       }
 
       if (! is_killed_event()) {
@@ -401,11 +385,17 @@ namespace mctools {
       for (int i = 0; i < (int) HCE->GetCapacity(); i++) {
         G4VHitsCollection * hcol = HCE->GetHC(i);
         if (hcol != 0) {
-          // clog << datatools::io::devel
-          //           << "event_action::EndOfEventAction: Detach '"
-          //           << hcol->GetName () << "' hits collection"
-          //           << endl;
+          // Causes segfault on Geant4 >= 10.3, becuase will try and call
+          // input HC, which now is nullptr.
+#if G4VERSION < 1029
           HCE->AddHitsCollection(i, 0);
+#else
+          // Need to clarify why this is done (G4 usually manages lifetime
+          // of HC... If we remove the call, we get segfaults, we can run
+          // with the below, but not clear why it works (and not validated
+          // yet)
+          HCE->AddHitsCollection(i, new G4VHitsCollection);
+#endif
         }
       }
       return;
@@ -419,47 +409,16 @@ namespace mctools {
       }
 
       G4HCofThisEvent * HCE = event_->GetHCofThisEvent ();
+      int public_sensitive_category_counter {0};
 
-      DT_LOG_DEBUG(_logprio(), "List of sensitive hit collections : ");
-      for (int i = 0; i < (int) HCE->GetCapacity (); i++ ) {
-        G4VHitsCollection * hc = HCE->GetHC (i);
-        if (hc != 0) {
-          DT_LOG_DEBUG(_logprio(), "Hit collection '" << hc->GetName()
-                       << "' for sensitive detector '" << hc->GetSDname()<< "' @ " << hc);
-        }
-      }
+      // Loop on the dictionnary of sensitive detectors
+      for (const auto& sdPair : _detector_construction_->get_sensitive_detectors()) {
+        const std::string & sensitive_category = sdPair.first;
 
-      // Process the list of sensitive hits:
-      if (_run_action_->get_manager ().using_time_stat ()) {
-        _run_action_->grab_manager ().grab_CT_map ()["HP"].start ();
-      }
+        sensitive_detector & the_detector = *(sdPair.second);
 
-      DT_LOG_DEBUG(_logprio(), "List of sensitive hit collections : ");
-      for (int i = 0; i < (int) HCE->GetCapacity (); i++ ) {
-        G4VHitsCollection * hc = HCE->GetHC (i);
-        if (hc != 0) {
-          DT_LOG_DEBUG(_logprio(), "Hit collection '" << hc->GetName()
-                       << "' for sensitive detector '" << hc->GetSDname()<< "' @ " << hc);
-        }
-      }
-
-      // Loop on the dictionnary of sensitive detectors:
-      int public_sensitive_category_counter = 0;
-      for (detector_construction::sensitive_detector_dict_type::const_iterator iSD
-             = _detector_construction_->get_sensitive_detectors ().begin ();
-           iSD != _detector_construction_->get_sensitive_detectors ().end ();
-           iSD++) {
-        const std::string & sensitive_category = iSD->first;
-        sensitive_detector & the_detector = *iSD->second;
-
-        DT_LOG_DEBUG(_logprio(), "Processing hits from sensitive detector '"
-                     << sensitive_category << "'...");
-        // sensitive_detector::make_hit_collection_name (sensitive_category)
         G4VHitsCollection * the_hits_collection = HCE->GetHC (the_detector.get_HCID ());
-        if (the_hits_collection == 0) {
-          DT_LOG_DEBUG(_logprio(),
-                       "No hit to process from sensitive detector '"
-                       << sensitive_category << "'...");
+        if (the_hits_collection == nullptr) {
           continue;
         }
 
@@ -470,14 +429,12 @@ namespace mctools {
          * 'official' MC hit categories should never starts with "__" and should
          * be associated to some sensitive detector.
          */
-        const bool is_private_category = boost::starts_with(sensitive_category, "__");
-        if (! is_private_category) {
+        if (! boost::starts_with(sensitive_category, "__") ) {
           public_sensitive_category_counter++;
         }
 
         sensitive_hit_collection * SHC
           = dynamic_cast<sensitive_hit_collection *> (the_hits_collection);
-        DT_LOG_DEBUG(_logprio(), "Collection has " << SHC->GetSize () << " hits.");
 
         /** Search for some step hit processors attached to the
          * sensitive detector: one can have several step hit
@@ -487,8 +444,8 @@ namespace mctools {
         if (the_detector.get_hit_processors ().size () > 0) {
           // Collect a 'phits' vector of pointers on 'base step hits':
           ::mctools::base_step_hit_processor::step_hit_ptr_collection_type phits;
-          // 2011-04-05 FM : this should accelerate the process a little bit :
           phits.reserve (SHC->get_hits ().size ());
+
           for (size_t ihit = 0; ihit < SHC->get_hits ().size (); ihit++) {
             phits.push_back (&(SHC->grab_hits ().at (ihit)->grab_hit_data ()));
           }
@@ -496,21 +453,9 @@ namespace mctools {
           // 'phits' is used as the input of the 'process' method
           // from each processor attached to the sensitive
           // category/detector:
-          for (sensitive_detector::hit_processor_dict_type::iterator iproc
-                 = the_detector.grab_hit_processors ().begin ();
-               iproc != the_detector.grab_hit_processors ().end ();
-               iproc++) {
-            /*
-              const string & hit_proc_name = iproc->first;
-              cerr << "DEVEL: " << "mctools::g4::event_action::EndOfEventAction: "
-              << "hit_proc_name = `" << hit_proc_name << "'" << endl;
-            */
-            ::mctools::base_step_hit_processor * hit_proc = iproc->second;
-            hit_proc->process(phits, grab_event_data ());
+          for (auto& hitProcPair : the_detector.grab_hit_processors()) {
+            (hitProcPair.second)->process(phits, grab_event_data());
           }
-        } else {
-          // No hit processor for this sensitive
-          // category/detector: step hits are dropped.
         }
       }
 
