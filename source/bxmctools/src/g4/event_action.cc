@@ -49,39 +49,6 @@ namespace mctools {
 
   namespace g4 {
 
-    const run_action & event_action::get_run_action () const
-    {
-      return *_run_action_;
-    }
-
-    run_action & event_action::grab_run_action ()
-    {
-      return *_run_action_;
-    }
-
-    const ::mctools::simulated_data & event_action::get_event_data () const
-    {
-      if (_external_event_data_ != 0) return *_external_event_data_;
-      return _event_data_;
-    }
-
-    ::mctools::simulated_data & event_action::grab_event_data ()
-    {
-      if (_external_event_data_ != 0) return *_external_event_data_;
-      return _event_data_;
-    }
-
-    void event_action::set_external_event_data (::mctools::simulated_data & a_external_event_data)
-    {
-      _external_event_data_ = &a_external_event_data;
-      return;
-    }
-
-    bool event_action::is_initialized () const
-    {
-      return _initialized_;
-    }
-
     event_action::event_action (run_action & run_action_,
                                 const detector_construction & dctor_)
     {
@@ -103,25 +70,6 @@ namespace mctools {
       if (is_initialized ()) {
         reset ();
       }
-      return;
-    }
-
-    void event_action::reset ()
-    {
-      DT_THROW_IF(! is_initialized (), std::logic_error, "Not initialized !");
-      _initialized_ = false;
-      _at_reset_();
-      _save_only_tracked_events_ = true;
-      return;
-    }
-
-    void event_action::_at_init_ ()
-    {
-      return;
-    }
-
-    void event_action::_at_reset_ ()
-    {
       return;
     }
 
@@ -155,30 +103,12 @@ namespace mctools {
       return;
     }
 
-    bool event_action::is_save_only_tracked_events() const
+    void event_action::reset ()
     {
-      return _save_only_tracked_events_;
-    }
-
-    bool event_action::is_aborted_event () const
-    {
-      return _aborted_event_;
-    }
-
-    void event_action::set_aborted_event (bool a_)
-    {
-      _aborted_event_ = a_;
-      return;
-    }
-
-    bool event_action::is_killed_event () const
-    {
-      return _killed_event_;
-    }
-
-    void event_action::set_killed_event (bool k_)
-    {
-      _killed_event_ = k_;
+      DT_THROW_IF(! is_initialized (), std::logic_error, "Not initialized !");
+      _initialized_ = false;
+      _at_reset_();
+      _save_only_tracked_events_ = true;
       return;
     }
 
@@ -311,93 +241,75 @@ namespace mctools {
       return;
     } // EndOfEventAction
 
-    void event_action::_mt_control_()
+    void event_action::set_external_event_data (::mctools::simulated_data & a_external_event_data)
     {
-      bool must_abort_run = false;
-
-      // External threaded run control :
-      if (_run_action_->get_manager ().has_simulation_ctrl()) {
-        DT_LOG_TRACE(_logprio(), "Using external run control...");
-        simulation_ctrl & SimCtrl = _run_action_->grab_manager ().grab_simulation_ctrl();
-        {
-          DT_LOG_TRACE(_logprio(), "Acquire the event control lock...");
-          boost::mutex::scoped_lock lock (*SimCtrl.event_mutex);
-          DT_LOG_TRACE(_logprio(), "Wait for event control to be available again...");
-          while (SimCtrl.event_availability_status != simulation_ctrl::AVAILABLE_FOR_G4) {
-            DT_LOG_TRACE(_logprio(), "Not yet...");
-            SimCtrl.event_available_condition->wait (*SimCtrl.event_mutex);
-          }
-          DT_LOG_TRACE(_logprio(), "Ok let's go on...");
-          if (SimCtrl.event_availability_status == simulation_ctrl::ABORT) {
-            must_abort_run = true;
-          }
-          SimCtrl.event_availability_status = simulation_ctrl::NOT_AVAILABLE_FOR_G4;
-          SimCtrl.counts++;
-          DT_LOG_TRACE(_logprio(), "Notify the external simulation run manager...");
-          SimCtrl.event_available_condition->notify_one ();
-        }
-
-        // Wait for the release of the event control by the external process :
-        {
-          DT_LOG_TRACE(_logprio(), "Wait for the release of the event control by the external process...");
-          boost::mutex::scoped_lock lock (*SimCtrl.event_mutex);
-          while (SimCtrl.event_availability_status == simulation_ctrl::NOT_AVAILABLE_FOR_G4) {
-            DT_LOG_TRACE(_logprio(), "Not yet...");
-            SimCtrl.event_available_condition->wait (*SimCtrl.event_mutex);
-          }
-          DT_LOG_TRACE(_logprio(), "Ok ! The event control is released by the external process...");
-          if (SimCtrl.event_availability_status == simulation_ctrl::ABORT) {
-            DT_LOG_WARNING(_logprio(),
-                           "Detected an 'Abort' request from the external process...");
-            must_abort_run = true;
-          }
-        }
-
-        if (SimCtrl.is_stop_requested ()) {
-          DT_LOG_TRACE(_logprio(), "is_stop_requested..." );
-          must_abort_run = true;
-        }
-
-        if (SimCtrl.max_counts > 0 && (SimCtrl.counts > SimCtrl.max_counts)) {
-          DT_LOG_TRACE(_logprio(), "Max counts was reached.");
-          must_abort_run = true;
-        }
-      }
-
-      // Abort run condition :
-      if (must_abort_run) {
-        G4RunManager::GetRunManager()->AbortRun();
-      }
+      _external_event_data_ = &a_external_event_data;
       return;
     }
 
-    void event_action::_save_data_()
+    const ::mctools::simulated_data & event_action::get_event_data () const
     {
-      // Store the event if run action has this ability:
-      _run_action_->store_data(get_event_data());
+      if (_external_event_data_ != 0) return *_external_event_data_;
+      return _event_data_;
+    }
+
+    ::mctools::simulated_data & event_action::grab_event_data ()
+    {
+      if (_external_event_data_ != 0) return *_external_event_data_;
+      return _event_data_;
+    }
+
+    const run_action & event_action::get_run_action () const
+    {
+      return *_run_action_;
+    }
+
+    run_action & event_action::grab_run_action ()
+    {
+      return *_run_action_;
+    }
+
+
+    bool event_action::is_initialized () const
+    {
+      return _initialized_;
+    }
+
+    bool event_action::is_aborted_event () const
+    {
+      return _aborted_event_;
+    }
+
+    void event_action::set_aborted_event (bool a_)
+    {
+      _aborted_event_ = a_;
       return;
     }
 
-    void event_action::_clear_hits_collections_(const G4Event* event_)
+    bool event_action::is_killed_event () const
     {
-      // Detach the hits collections from this event :
-      G4HCofThisEvent * HCE = event_->GetHCofThisEvent();
-      for (int i = 0; i < (int) HCE->GetCapacity(); i++) {
-        G4VHitsCollection * hcol = HCE->GetHC(i);
-        if (hcol != 0) {
-          // Causes segfault on Geant4 >= 10.3, becuase will try and call
-          // input HC, which now is nullptr.
-#if G4VERSION < 1029
-          HCE->AddHitsCollection(i, 0);
-#else
-          // Need to clarify why this is done (G4 usually manages lifetime
-          // of HC... If we remove the call, we get segfaults, we can run
-          // with the below, but not clear why it works (and not validated
-          // yet)
-          HCE->AddHitsCollection(i, new G4VHitsCollection);
-#endif
-        }
-      }
+      return _killed_event_;
+    }
+
+    void event_action::set_killed_event (bool k_)
+    {
+      _killed_event_ = k_;
+      return;
+    }
+
+    bool event_action::is_save_only_tracked_events() const
+    {
+      return _save_only_tracked_events_;
+    }
+
+
+    void event_action::_at_init_ ()
+    {
+      return;
+    }
+
+    void event_action::_at_reset_ ()
+    {
       return;
     }
 
@@ -469,6 +381,96 @@ namespace mctools {
         _run_action_->grab_manager().grab_CT_map ()["HP"].stop ();
       }
 
+      return;
+    }
+
+    void event_action::_save_data_()
+    {
+      // Store the event if run action has this ability:
+      _run_action_->store_data(get_event_data());
+      return;
+    }
+
+    void event_action::_clear_hits_collections_(const G4Event* event_)
+    {
+      // Detach the hits collections from this event :
+      G4HCofThisEvent * HCE = event_->GetHCofThisEvent();
+      for (int i = 0; i < (int) HCE->GetCapacity(); i++) {
+        G4VHitsCollection * hcol = HCE->GetHC(i);
+        if (hcol != 0) {
+          // Causes segfault on Geant4 >= 10.3, becuase will try and call
+          // input HC, which now is nullptr.
+#if G4VERSION_NUMBER < 1029
+          HCE->AddHitsCollection(i, 0);
+#else
+          // Need to clarify why this is done (G4 usually manages lifetime
+          // of HC... If we remove the call, we get segfaults, we can run
+          // with the below, but not clear why it works (and not validated
+          // yet)
+          HCE->AddHitsCollection(i, new G4VHitsCollection);
+#endif
+        }
+      }
+      return;
+    }
+
+    void event_action::_mt_control_()
+    {
+      bool must_abort_run = false;
+
+      // External threaded run control :
+      if (_run_action_->get_manager ().has_simulation_ctrl()) {
+        DT_LOG_TRACE(_logprio(), "Using external run control...");
+        simulation_ctrl & SimCtrl = _run_action_->grab_manager ().grab_simulation_ctrl();
+        {
+          DT_LOG_TRACE(_logprio(), "Acquire the event control lock...");
+          boost::mutex::scoped_lock lock (*SimCtrl.event_mutex);
+          DT_LOG_TRACE(_logprio(), "Wait for event control to be available again...");
+          while (SimCtrl.event_availability_status != simulation_ctrl::AVAILABLE_FOR_G4) {
+            DT_LOG_TRACE(_logprio(), "Not yet...");
+            SimCtrl.event_available_condition->wait (*SimCtrl.event_mutex);
+          }
+          DT_LOG_TRACE(_logprio(), "Ok let's go on...");
+          if (SimCtrl.event_availability_status == simulation_ctrl::ABORT) {
+            must_abort_run = true;
+          }
+          SimCtrl.event_availability_status = simulation_ctrl::NOT_AVAILABLE_FOR_G4;
+          SimCtrl.counts++;
+          DT_LOG_TRACE(_logprio(), "Notify the external simulation run manager...");
+          SimCtrl.event_available_condition->notify_one ();
+        }
+
+        // Wait for the release of the event control by the external process :
+        {
+          DT_LOG_TRACE(_logprio(), "Wait for the release of the event control by the external process...");
+          boost::mutex::scoped_lock lock (*SimCtrl.event_mutex);
+          while (SimCtrl.event_availability_status == simulation_ctrl::NOT_AVAILABLE_FOR_G4) {
+            DT_LOG_TRACE(_logprio(), "Not yet...");
+            SimCtrl.event_available_condition->wait (*SimCtrl.event_mutex);
+          }
+          DT_LOG_TRACE(_logprio(), "Ok ! The event control is released by the external process...");
+          if (SimCtrl.event_availability_status == simulation_ctrl::ABORT) {
+            DT_LOG_WARNING(_logprio(),
+                           "Detected an 'Abort' request from the external process...");
+            must_abort_run = true;
+          }
+        }
+
+        if (SimCtrl.is_stop_requested ()) {
+          DT_LOG_TRACE(_logprio(), "is_stop_requested..." );
+          must_abort_run = true;
+        }
+
+        if (SimCtrl.max_counts > 0 && (SimCtrl.counts > SimCtrl.max_counts)) {
+          DT_LOG_TRACE(_logprio(), "Max counts was reached.");
+          must_abort_run = true;
+        }
+      }
+
+      // Abort run condition :
+      if (must_abort_run) {
+        G4RunManager::GetRunManager()->AbortRun();
+      }
       return;
     }
 

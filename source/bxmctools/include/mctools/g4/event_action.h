@@ -43,42 +43,6 @@ namespace mctools {
                          public loggable_support
     {
     public:
-
-      // typedef ::mctools::simulated_data sim_data_type;
-
-      /// Check initialization flag
-      bool is_initialized() const;
-
-      /// Check aborted event flag
-      bool is_aborted_event() const;
-
-      /// Set aborted event flag
-      void set_aborted_event(bool = true);
-
-      /// Check akilled event flag
-      bool is_killed_event() const;
-
-      /// Set killed event flag
-      void set_killed_event(bool = true);
-
-      /// Set external event data
-      void set_external_event_data(::mctools::simulated_data & a_external_event_data);
-
-      /// Set the flag to save only tracked/unkilled events
-      bool is_save_only_tracked_events() const;
-
-      /// Return non mutable event data
-      const ::mctools::simulated_data & get_event_data() const;
-
-      /// Return mutable event data
-      ::mctools::simulated_data & grab_event_data();
-
-      /// Return non mutable run action
-      const run_action & get_run_action() const;
-
-      /// Return mutable run action
-      run_action & grab_run_action();
-
       /// Constructor
       event_action(run_action & a_run_action, const detector_construction & a_dctor);
 
@@ -97,8 +61,40 @@ namespace mctools {
 
       void EndOfEventAction(const G4Event *);
 
-    private:
+      /// Set external event data
+      void set_external_event_data(::mctools::simulated_data & a_external_event_data);
 
+      /// Return non mutable event data
+      const ::mctools::simulated_data & get_event_data() const;
+
+      /// Return mutable event data
+      ::mctools::simulated_data & grab_event_data();
+
+      /// Return non mutable run action
+      const run_action & get_run_action() const;
+
+      /// Return mutable run action
+      run_action & grab_run_action();
+
+      /// Check initialization flag
+      bool is_initialized() const;
+
+      /// Check aborted event flag
+      bool is_aborted_event() const;
+
+      /// Set aborted event flag
+      void set_aborted_event(bool = true);
+
+      /// Check akilled event flag
+      bool is_killed_event() const;
+
+      /// Set killed event flag
+      void set_killed_event(bool = true);
+
+      /// Set the flag to save only tracked/unkilled events
+      bool is_save_only_tracked_events() const;
+
+    private:
       /// Action performed at initialization
       void _at_init_();
 
@@ -118,12 +114,11 @@ namespace mctools {
       void _mt_control_();
 
     private:
-
       // Management:
       bool                          _initialized_; //!< Initialization flag
 
       // Configuration:
-      bool _save_only_tracked_events_; //!< Flag to save only tracked/unkilled event
+      bool                          _save_only_tracked_events_; //!< Flag to save only tracked/unkilled event
 
       // Working data:
       const detector_construction * _detector_construction_; //!< Handle to the G4 detector construction
@@ -133,11 +128,8 @@ namespace mctools {
       bool                          _aborted_event_; //!< Flag to abort the current event
       bool                          _killed_event_; //!< Flag to kill the current event
       ::mctools::base_step_hit_processor::step_hit_ptr_collection_type _phits_; //!< Collection of step hit processors
-
     };
-
   } // end of namespace g4
-
 } // end of namespace mctools
 
 /// OCD support : interface
