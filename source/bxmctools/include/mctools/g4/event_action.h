@@ -127,7 +127,8 @@ namespace mctools {
       ::mctools::simulated_data   * _external_event_data_; //!< Handle to an external simulated event model
       bool                          _aborted_event_; //!< Flag to abort the current event
       bool                          _killed_event_; //!< Flag to kill the current event
-      ::mctools::base_step_hit_processor::step_hit_ptr_collection_type _phits_; //!< Collection of step hit processors
+      // Appears not to be used:
+      //::mctools::base_step_hit_processor::step_hit_ptr_collection_type _phits_; //!< Collection of step hit processors
     };
   } // end of namespace g4
 } // end of namespace mctools

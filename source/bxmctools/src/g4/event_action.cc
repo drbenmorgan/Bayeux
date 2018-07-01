@@ -61,7 +61,7 @@ namespace mctools {
       _detector_construction_ = &dctor_;
       _aborted_event_         = false;
       _killed_event_          = false;
-      _external_event_data_   = 0;
+      _external_event_data_   = nullptr;
       return;
     }
 
@@ -80,16 +80,16 @@ namespace mctools {
       loggable_support::_initialize_logging_support(config_);
 
       if (config_.has_key ("event_model.hit_collection_type")) {
-        const std::string event_model_collection_type
-          = config_.fetch_string ("event_model.hit_collection_type");
+        const std::string eventHCT {config_.fetch_string ("event_model.hit_collection_type")};
         ::mctools::simulated_data & event_data = this->grab_event_data ();
         event_data.reset_collection_type ();
-        if (event_model_collection_type == "plain") {
+
+        if (eventHCT == "plain") {
           event_data.set_collection_type (::mctools::simulated_data::PLAIN_HIT_COLLECTION_TYPE);
-        } else if (event_model_collection_type == "handle") {
+        } else if (eventHCT == "handle") {
           event_data.set_collection_type (::mctools::simulated_data::HANDLE_HIT_COLLECTION_TYPE);
         } else {
-          DT_THROW_IF(true, std::logic_error, "Invalid hit collection type '" << event_model_collection_type << "' !");
+          DT_THROW_IF(true, std::logic_error, "Invalid hit collection type '" << eventHCT << "' !");
         }
       }
 
@@ -135,24 +135,25 @@ namespace mctools {
           DT_LOG_NOTICE(datatools::logger::PRIO_NOTICE, message_head << event_id);
         }
       }
+
       if (is_aborted_event()) {
         G4RunManager::GetRunManager()->AbortEvent();
         DT_LOG_WARNING(_logprio(), "Event #" << event_id << " is aborted. Exiting.");
-        DT_LOG_TRACE_EXITING(_logprio());
         return;
       }
 
-      bool record_prng_states = true;
-      if (record_prng_states) {
-        const manager & const_mgr = _run_action_->get_manager();
-        if (const_mgr.has_prng_state_save_modulo()) {
-          DT_LOG_DEBUG(_logprio(), "Record PRNG states for event #" << event_id);
-          if ((event_id % const_mgr.get_prng_state_save_modulo()) == 0) {
-            manager * mgr = const_cast<manager *>(&const_mgr);
-            mgr->record_current_prng_states();
-          }
+      //? Always true so no `if` needed?
+      //bool record_prng_states = true;
+      //if (record_prng_states) {
+      const manager & const_mgr = _run_action_->get_manager();
+      if (const_mgr.has_prng_state_save_modulo()) {
+        DT_LOG_DEBUG(_logprio(), "Record PRNG states for event #" << event_id);
+        if ((event_id % const_mgr.get_prng_state_save_modulo()) == 0) {
+          manager * mgr = const_cast<manager *>(&const_mgr);
+          mgr->record_current_prng_states();
         }
       }
+      //}
 
       // BUGFIX: FM+AC 2014-09-05:
       // In case the manager record the track history of some previous event,
@@ -237,7 +238,6 @@ namespace mctools {
       // Multi-thread control:
       _mt_control_();
 
-      DT_LOG_TRACE_EXITING(_logprio());
       return;
     } // EndOfEventAction
 
@@ -249,14 +249,12 @@ namespace mctools {
 
     const ::mctools::simulated_data & event_action::get_event_data () const
     {
-      if (_external_event_data_ != 0) return *_external_event_data_;
-      return _event_data_;
+      return (_external_event_data_ != nullptr) ? *_external_event_data_ : _event_data_;
     }
 
     ::mctools::simulated_data & event_action::grab_event_data ()
     {
-      if (_external_event_data_ != 0) return *_external_event_data_;
-      return _event_data_;
+      return (_external_event_data_ != nullptr) ? *_external_event_data_ : _event_data_;
     }
 
     const run_action & event_action::get_run_action () const
@@ -324,10 +322,10 @@ namespace mctools {
       int public_sensitive_category_counter {0};
 
       // Loop on the dictionnary of sensitive detectors
-      for (const auto& sdPair : _detector_construction_->get_sensitive_detectors()) {
-        const std::string & sensitive_category = sdPair.first;
+      for (const auto& sdCatDet : _detector_construction_->get_sensitive_detectors()) {
+        const std::string & sensitive_category = sdCatDet.first;
 
-        sensitive_detector & the_detector = *(sdPair.second);
+        sensitive_detector & the_detector = *(sdCatDet.second);
 
         G4VHitsCollection * the_hits_collection = HCE->GetHC (the_detector.get_HCID ());
         if (the_hits_collection == nullptr) {
@@ -361,6 +359,11 @@ namespace mctools {
           for (size_t ihit = 0; ihit < SHC->get_hits ().size (); ihit++) {
             phits.push_back (&(SHC->grab_hits ().at (ihit)->grab_hit_data ()));
           }
+
+          // Possibly better done as
+          //for (const auto& ihit : SHC->grab_hits()) {
+          //  phits.push_back(&(ihit->grab_hit_data()));
+          //}
 
           // 'phits' is used as the input of the 'process' method
           // from each processor attached to the sensitive
