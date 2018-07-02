@@ -198,7 +198,7 @@ namespace mctools {
     mctools::base_step_hit_processor &
     sensitive_detector::grab_hit_processor(const std::string & name_)
     {
-      hit_processor_dict_type::iterator found = _hit_processors_.find(name_);
+      auto found = _hit_processors_.find(name_);
       DT_THROW_IF (found == _hit_processors_.end(),
                    std::logic_error, "No '" << name_ << "' hit processor !");
       return *found->second;
@@ -207,7 +207,7 @@ namespace mctools {
     void sensitive_detector::add_hit_processor(const std::string & name_,
                                                 mctools::base_step_hit_processor & shp_)
     {
-      DT_THROW_IF (_hit_processors_.find(name_) != _hit_processors_.end(),
+      DT_THROW_IF (this->has_hit_processor(name_),
                    std::logic_error,
                    "This sensitive detector '" << _sensitive_category_
                    << "' already has a '" << name_ << "' hit processor !");
@@ -285,53 +285,44 @@ namespace mctools {
       std::vector<std::string> logical_volumes;
       if (config_.has_key("sensitive.volumes")) {
         config_.fetch("sensitive.volumes", logical_volumes);
-        for (int i = 0; i < (int) logical_volumes.size(); i++) {
-          const std::string & lvname = logical_volumes[i];
+        for (const std::string& lvname : logical_volumes) {
           attach_logical_volume(lvname);
         }
       }
 
       {
         // Record track id
-        const std::string trkid_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_TRACK_ID);
-        if (config_.has_flag(trkid_key)) {
-          // this method enables the sensitive detector to record the track ID
-          // as an auxiliary properties of the step hit
-          set_record_track_id(true);
-        }
+         // enables the sensitive detector to record the track ID
+        // as an auxiliary properties of the step hit
+        const std::string trkid_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_TRACK_ID)};
+        set_record_track_id(config_.has_flag(trkid_key));
       }
 
       {
         // Record boundaries
-        const std::string trkid_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_BOUNDARIES);
-        if (config_.has_flag(trkid_key)) {
-          // this method enables the sensitive detector to record the boundary flags
-          // as an auxiliary properties of the step hit
-          set_record_boundaries(true);
-        }
+        // this method enables the sensitive detector to record the boundary flags
+        // as an auxiliary properties of the step hit
+        const std::string trkid_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_BOUNDARIES)};
+        set_record_boundaries(config_.has_flag(trkid_key));
       }
 
       {
         // Record primary particle flag
-        const std::string pp_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_PRIMARY_PARTICLE);
-        if (config_.has_flag(pp_key)) {
-          // this method enables the sensitive detector to record a dedicated flag
-          // as an auxiliary properties of the step hit to flag a primary track
-          set_record_primary_particle(true);
-        }
+        // this method enables the sensitive detector to record a dedicated flag
+        // as an auxiliary properties of the step hit to flag a primary track
+        const std::string pp_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_PRIMARY_PARTICLE)};
+        set_record_primary_particle(config_.has_flag(pp_key));
       }
 
       {
         // Record alpha quenching flag
-        const std::string aq_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_ALPHA_QUENCHING);
-        if (config_.has_flag(aq_key)) {
-          // this method enables to add a special flag to the step hit
-          // for delta rays produced along the track of alpha particles;
-          // this should make possible to take into account quenching effects
-          // along alpha tracks by aggregation of the total energy deposit
-          // by secondary delta rays along the alpha track.
-          set_record_delta_ray_from_alpha(true);
-        }
+        // this method enables to add a special flag to the step hit
+        // for delta rays produced along the track of alpha particles;
+        // this should make possible to take into account quenching effects
+        // along alpha tracks by aggregation of the total energy deposit
+        // by secondary delta rays along the alpha track.
+        const std::string aq_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_ALPHA_QUENCHING)};
+        set_record_delta_ray_from_alpha(config_.has_flag(aq_key));
       }
 
       // XG (28/05/2011): the way to set 'record' properties is only
@@ -343,14 +334,12 @@ namespace mctools {
       // be sure to set properties properly
       {
         // Record major track
-        const std::string rmt_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MAJOR_TRACK);
-        if (config_.has_flag(rmt_key)) {
-          set_record_major_track(true);
-        }
+        const std::string rmt_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MAJOR_TRACK)};
+        set_record_major_track(config_.has_flag(rmt_key));
       }
 
       {
-        const std::string mtme_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_MAJOR_TRACK_MINIMUM_ENERGY);
+        const std::string mtme_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_MAJOR_TRACK_MINIMUM_ENERGY)};
         if (config_.has_key(mtme_key)) {
           const double e_min = config_.fetch_real(mtme_key) * CLHEP::keV;
           DT_THROW_IF (e_min < 0, std::logic_error,
@@ -364,62 +353,48 @@ namespace mctools {
 
       {
         // Record creator process
-        const std::string record_creator_process_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_CREATOR_PROCESS);
-        if (config_.has_flag(record_creator_process_key)) {
-          set_record_creator_process(true);
-        }
+        const std::string record_creator_process_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_CREATOR_PROCESS)};
+        set_record_creator_process(config_.has_flag(record_creator_process_key));
       }
 
       {
         // Record sensitive category where particle is created
-        const std::string record_creator_category_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_CREATOR_CATEGORY);
-        if (config_.has_flag(record_creator_category_key)) {
-          set_record_creator_category(true);
-        }
+        const std::string record_creator_category_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_CREATOR_CATEGORY)};
+        set_record_creator_category(config_.has_flag(record_creator_category_key));
       }
 
       {
         // 2011-08-26 FM: new option : 'record material'
-        const std::string record_material_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MATERIAL);
-        if (config_.has_flag(record_material_key)) {
-          set_record_material(true);
-        }
+        const std::string record_material_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MATERIAL)};
+        set_record_material(config_.has_flag(record_material_key));
       }
 
       {
         // 2011-08-26 FM: new option : 'record sensitive category'
-        const std::string record_sensitive_category_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_SENSITIVE_CATEGORY);
-        if (config_.has_flag(record_sensitive_category_key)) {
-          set_record_sensitive_category(true);
-        }
+        const std::string record_sensitive_category_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_SENSITIVE_CATEGORY)};
+        set_record_sensitive_category(config_.has_flag(record_sensitive_category_key));
       }
 
       {
         // Record momentum
-        const std::string record_momentum_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MOMENTUM);
-        if (config_.has_flag(record_momentum_key)) {
-          set_record_momentum(true);
-        }
+        const std::string record_momentum_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_MOMENTUM)};
+        set_record_momentum(config_.has_flag(record_momentum_key));
       }
 
       {
         // Record kinetic energy
-        const std::string record_kinetic_energy_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_KINETIC_ENERGY);
-        if (config_.has_flag(record_kinetic_energy_key)) {
-          set_record_kinetic_energy(true);
-        }
+        const std::string record_kinetic_energy_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_KINETIC_ENERGY)};
+        set_record_kinetic_energy(config_.has_flag(record_kinetic_energy_key));
       }
 
       {
         // Record true step length
-        const std::string record_step_length_key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_STEP_LENGTH);
-        if (config_.has_flag(record_step_length_key)) {
-          set_record_step_length(true);
-        }
+        const std::string record_step_length_key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_RECORD_STEP_LENGTH)};
+        set_record_step_length(config_.has_flag(record_step_length_key));
       }
 
       {
-        const std::string key = geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_HITS_BUFFER_CAPACITY);
+        const std::string key {geomtools::sensitive::make_key(sensitive_utils::SENSITIVE_HITS_BUFFER_CAPACITY)};
         if (config_.has_key(key)) {
           const int cap = config_.fetch_integer(key);
           DT_THROW_IF (cap < 0, std::logic_error,
@@ -433,6 +408,7 @@ namespace mctools {
         }
       }
 
+      // ... Possible to use just has_flag here?
       // Drop steps with no energy deposit
       if (geomtools::sensitive::has_key(config_, sensitive_utils::SENSITIVE_DROP_ZERO_ENERGY_DEPOSIT)) {
         const bool flag = geomtools::sensitive::has_flag(config_,
@@ -505,10 +481,10 @@ namespace mctools {
 
       _set_defaults();
 
-      _track_info_ptr_ = 0;
-      _parent_track_info_ptr_ = 0;
+      _track_info_ptr_ = nullptr;
+      _parent_track_info_ptr_ = nullptr;
 
-      _hits_collection_ = 0;
+      _hits_collection_ = nullptr;
       _number_of_sensitive_steps_ = 0;
 
       _used_hits_count_ = 0;
@@ -548,9 +524,6 @@ namespace mctools {
 
     void sensitive_detector::Initialize(G4HCofThisEvent * /*some_hit_collections_*/)
     {
-      //cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-      //            << "Entering for detector '" << _sensitive_category_ << "'..." << endl;
-
       // First pass, initialize the buffer :
       if (_hits_buffer_.size() == 0) {
         _hits_buffer_.reserve(_hits_buffer_capacity_);
@@ -558,18 +531,9 @@ namespace mctools {
         for (int i = 0; i <(int) _hits_buffer_capacity_; i++) {
           sensitive_hit a_hit;
           _hits_buffer_.push_back(a_hit);
-          // make sure they have no valid ID :
-          //_hits_buffer.back().get_hit_data().invalidate_hit_id();
         }
         // No hit has been validated from this buffer yet :
         _used_hits_count_ = 0;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Buffer size = " << _hits_buffer.size() << endl;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Hit count = " << _used_hits_count << endl;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Hit @: " << &_hits_buffer[0] << endl;
-        //_hits_buffer.back().get_hit_data().tree_dump(cerr, "" , "DEVEL: ");
         DT_LOG_NOTICE(_logprio(), "Setup the buffer of hits for detector '" << _sensitive_category_ << "' "
                       << "with size = " << _hits_buffer_.size());
       }
@@ -577,8 +541,6 @@ namespace mctools {
       // Reset the hits in the buffer if needed :
       for (int i = 0; i < _used_hits_count_; i++) {
         _hits_buffer_[i].grab_hit_data().reset();
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << "Reset base step hit #" << i << endl;
       }
       if (_hits_collection_ != 0) {
         _hits_collection_->grab_hits().clear();
@@ -603,14 +565,11 @@ namespace mctools {
         _manager_->set_use_track_history(true);
       }
 
-      //cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: " << "Exiting." << endl;
       return;
     }
 
     void sensitive_detector::EndOfEvent(G4HCofThisEvent * some_hit_collections_)
     {
-      // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::EndOfEvent: "
-      //           << "Entering for detector '" << _sensitive_category_ << "'..." << endl;
       if ( _HCID_ < 0 ) {
         _HCID_ = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]);
       }
@@ -619,11 +578,9 @@ namespace mctools {
       if (_used_hits_count_ > 0) {
 
         // Set the hits collection pointer :
-        if (_hits_collection_ == 0) {
+        if (_hits_collection_ == nullptr) {
           _hits_collection_ = new sensitive_hit_collection(SensitiveDetectorName,
                                                             collectionName[0]);
-          // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::EndOfEvent: "
-          //           << "Hits collection @ " << _hits_collection << endl;
           // Assign proper capacity to the 'hits collection' :
           _hits_collection_->grab_hits().reserve(_hits_buffer_.size());
         }
@@ -661,25 +618,12 @@ namespace mctools {
         }
         }
       */
-      // cerr << datatools::io::devel
-      //      << "snemo::g4::sensitive_detector::EndOfEvent: "
-      //      << "Exiting." << endl;
       return;
     }
 
     G4bool sensitive_detector::ProcessHits(G4Step * step_,
                                             G4TouchableHistory * /*touchable_history_*/)
     {
-      DT_LOG_TRACE(_logprio(),"Entering...");
-      const bool do_process_hits = true;
-      if (! do_process_hits) {
-        DT_LOG_TRACE(_logprio(),"Exiting.");
-        return false;
-      }
-
-      DT_LOG_TRACE(_logprio(),"Buffer size = " << _hits_buffer_.size());
-      DT_LOG_TRACE(_logprio(),"Hit count = " << _used_hits_count_);
-
       const double energy_deposit = step_->GetTotalEnergyDeposit();
       if (energy_deposit <= 1.e-10 * CLHEP::keV){
         bool quit = true;
@@ -687,14 +631,11 @@ namespace mctools {
           if (_track_gamma_) quit = false;
         } else if (step_->GetTrack()->GetDefinition() == G4Neutron::NeutronDefinition()) {
           if (_track_neutron_) quit = false;
-          //} else if (step_->GetTrack()->GetDefinition() == G4Neutron::OpticalPhotonDefinition()) {
-          //if (_track_optical_photon_) quit = false;
         } else if (!_drop_zero_energy_deposit_steps_) {
           quit = false;
         }
         if (quit) {
           // We decide not to process this hit further because it is not interesting
-          DT_LOG_TRACE(_logprio(),"Exiting.");
           return false;
         }
       }
@@ -707,16 +648,6 @@ namespace mctools {
       const std::string track_particle_name = step_->GetTrack()->GetDefinition()->GetParticleName();
       const int track_id        = step_->GetTrack()->GetTrackID();
       const int parent_track_id = step_->GetTrack()->GetParentID();
-      /*
-      const double global_time  = step_->GetTrack()->GetGlobalTime();
-      const double local_time   = step_->GetTrack()->GetLocalTime();
-      const double proper_time  = step_->GetTrack()->GetProperTime();
-      step_->GetTrack()->GetVertexPosition();
-      step_->GetTrack()->GetVertexMomentumDirection();
-      step_->GetTrack()->GetLogicalVolumeAtVertex();
-      step_->GetTrack()->GetWeight();
-      */
-
       bool primary_track           = false;
       bool delta_ray_from_an_alpha = false;
       bool major_track             = false;
@@ -740,8 +671,6 @@ namespace mctools {
                 = step_->GetTrack()->GetCreatorProcess()->GetProcessName();
               ti.set_creator_process_name(process_name);
             }
-            // const std::string & category = get_sensitive_category();
-            // ti.set_creator_sensitive_category(category);
             _track_info_ptr_ = &ti;
             _parent_track_info_ptr_ = 0;
           } else {
@@ -793,28 +722,14 @@ namespace mctools {
       } // if (_using_track_infos)
 
       if (_used_hits_count_ ==(int) _hits_buffer_.size()) {
-        //unsigned int osize = _hits_buffer.size();
         sensitive_hit a_hit;
         _hits_buffer_.push_back(a_hit);
-        //unsigned int nsize = _hits_buffer.size();
-        // cerr << datatools::io::devel
-        //      << "snemo::g4::sensitive_detector::ProcessHits: "
-        //      << "Increase the size of the buffer of sensitive hits for detector '"
-        //      << _sensitive_category_ << "' from " << osize
-        //      << " to " << nsize << "(capacity=" << _hits_buffer.capacity() << ")!"
-        //      << endl;
       }
       // Increment the hit counter :
       _used_hits_count_++;
 
       sensitive_hit * new_hit = &_hits_buffer_[_used_hits_count_ - 1];
 
-      DT_LOG_TRACE(_logprio(), "Buffer size = " << _hits_buffer_.size());
-      DT_LOG_TRACE(_logprio(), "Hit count = " << _used_hits_count_);
-      DT_LOG_TRACE(_logprio(), "New hit @ " << new_hit << " : ");
-      if (_logprio() == datatools::logger::PRIO_TRACE){
-        new_hit->get_hit_data().tree_dump(std::cerr);
-      }
 
       _number_of_sensitive_steps_++;
       // 2011-05-26 FM : was using "step_->GetTrack()->GetGlobalTime()";
@@ -865,11 +780,6 @@ namespace mctools {
                                 _track_info_ptr_->get_creator_process_name());
         }
 
-        // if (_record_creator_category_ && ! _track_info_ptr_->get_creator_sensitive_category().empty()) {
-        //   hit_aux.store_string(mctools::track_utils::CREATOR_CATEGORY_KEY,
-        //                         _track_info_ptr_->get_creator_sensitive_category());
-        // }
-
         if (_record_primary_particle_ && primary_track) {
           hit_aux.store_flag(mctools::track_utils::PRIMARY_PARTICLE_FLAG);
         }
@@ -914,7 +824,6 @@ namespace mctools {
         _manager_->grab_CT_map()["EA"].resume();
       }
 
-      DT_LOG_TRACE(_logprio(),"Exiting.");
       return true;
     }
 
@@ -1030,18 +939,6 @@ namespace mctools {
              << "Hits buffer capacity        : "
              << _hits_buffer_capacity_ << std::endl;
       }
-
-      // {
-      //   out_ << indent << datatools::i_tree_dumpable::tag
-      //        << "Properties : "
-      //        << std::endl;
-      //   {
-      //     ostringstream indent_oss;
-      //     indent_oss << indent;
-      //     indent_oss << datatools::i_tree_dumpable::skip_tag;
-      //     _aux.tree_dump(out_, "", indent_oss.str());
-      //   }
-      // }
 
       // Associated step hit processor
       {

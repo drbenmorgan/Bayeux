@@ -31,6 +31,14 @@ namespace mctools {
     class sensitive_hit : public G4VHit
     {
     public:
+      /// Default constructor
+      sensitive_hit ()=default;
+
+      /// Destructor
+      virtual ~sensitive_hit ()=default;
+
+      /// Reset to default values
+      void reset ();
 
       /// Return const reference to embedded base step hit
       const mctools::base_step_hit & get_hit_data () const;
@@ -38,19 +46,8 @@ namespace mctools {
       /// Return mutable reference to embedded base step hit
       mctools::base_step_hit & grab_hit_data ();
 
-      /// Default constructor
-      sensitive_hit ();
-
-      /// Destructor
-      virtual ~sensitive_hit ();
-
-      /// Reset to default values
-      void reset ();
-
     private:
-
       mctools::base_step_hit _hit_data_; //!< Basic MC step hit data
-
     };
 
   } // end of namespace g4
