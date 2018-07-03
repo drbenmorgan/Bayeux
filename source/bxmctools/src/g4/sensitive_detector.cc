@@ -548,9 +548,6 @@ namespace mctools {
 
     void sensitive_detector::Initialize(G4HCofThisEvent * /*some_hit_collections_*/)
     {
-      //cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-      //            << "Entering for detector '" << _sensitive_category_ << "'..." << endl;
-
       // First pass, initialize the buffer :
       if (_hits_buffer_.size() == 0) {
         _hits_buffer_.reserve(_hits_buffer_capacity_);
@@ -558,18 +555,9 @@ namespace mctools {
         for (int i = 0; i <(int) _hits_buffer_capacity_; i++) {
           sensitive_hit a_hit;
           _hits_buffer_.push_back(a_hit);
-          // make sure they have no valid ID :
-          //_hits_buffer.back().get_hit_data().invalidate_hit_id();
         }
         // No hit has been validated from this buffer yet :
         _used_hits_count_ = 0;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Buffer size = " << _hits_buffer.size() << endl;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Hit count = " << _used_hits_count << endl;
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << " Hit @: " << &_hits_buffer[0] << endl;
-        //_hits_buffer.back().get_hit_data().tree_dump(cerr, "" , "DEVEL: ");
         DT_LOG_NOTICE(_logprio(), "Setup the buffer of hits for detector '" << _sensitive_category_ << "' "
                       << "with size = " << _hits_buffer_.size());
       }
@@ -577,8 +565,6 @@ namespace mctools {
       // Reset the hits in the buffer if needed :
       for (int i = 0; i < _used_hits_count_; i++) {
         _hits_buffer_[i].grab_hit_data().reset();
-        // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: "
-        //      << "Reset base step hit #" << i << endl;
       }
       if (_hits_collection_ != 0) {
         _hits_collection_->grab_hits().clear();
@@ -603,14 +589,11 @@ namespace mctools {
         _manager_->set_use_track_history(true);
       }
 
-      //cerr << datatools::io::devel << "snemo::g4::sensitive_detector::Initialize: " << "Exiting." << endl;
       return;
     }
 
     void sensitive_detector::EndOfEvent(G4HCofThisEvent * some_hit_collections_)
     {
-      // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::EndOfEvent: "
-      //           << "Entering for detector '" << _sensitive_category_ << "'..." << endl;
       if ( _HCID_ < 0 ) {
         _HCID_ = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]);
       }
@@ -622,9 +605,6 @@ namespace mctools {
         if (_hits_collection_ == 0) {
           _hits_collection_ = new sensitive_hit_collection(SensitiveDetectorName,
                                                             collectionName[0]);
-          // cerr << datatools::io::devel << "snemo::g4::sensitive_detector::EndOfEvent: "
-          //           << "Hits collection @ " << _hits_collection << endl;
-          // Assign proper capacity to the 'hits collection' :
           _hits_collection_->grab_hits().reserve(_hits_buffer_.size());
         }
 
@@ -644,26 +624,6 @@ namespace mctools {
       _track_info_ptr_ = 0;
       _parent_track_info_ptr_ = 0;
 
-      // BUGFIX? FM+AC 2014/09/05: should not be done here but in the event_action(to be validated)
-      //_manager_->grab_track_history().reset();
-
-      /*
-        if ( _verbose > 1 )
-        {
-        sensitive_hits_collection * HC_tmp = 0;
-        HC_tmp =(sensitive_hits_collection * )( some_hit_collections->GetHC(_HCID));
-        for (unsigned int i = 0; i < HC_tmp->GetSize(); i++ )
-        {
-        clog << "DEBUG: sensitive_detector::EndOfEvent: "
-        << "hit collection(" << i
-        << ") is " << HC_tmp->GetVector()->at(i)
-        << "." << endl;
-        }
-        }
-      */
-      // cerr << datatools::io::devel
-      //      << "snemo::g4::sensitive_detector::EndOfEvent: "
-      //      << "Exiting." << endl;
       return;
     }
 
@@ -687,8 +647,6 @@ namespace mctools {
           if (_track_gamma_) quit = false;
         } else if (step_->GetTrack()->GetDefinition() == G4Neutron::NeutronDefinition()) {
           if (_track_neutron_) quit = false;
-          //} else if (step_->GetTrack()->GetDefinition() == G4Neutron::OpticalPhotonDefinition()) {
-          //if (_track_optical_photon_) quit = false;
         } else if (!_drop_zero_energy_deposit_steps_) {
           quit = false;
         }
@@ -707,15 +665,6 @@ namespace mctools {
       const std::string track_particle_name = step_->GetTrack()->GetDefinition()->GetParticleName();
       const int track_id        = step_->GetTrack()->GetTrackID();
       const int parent_track_id = step_->GetTrack()->GetParentID();
-      /*
-      const double global_time  = step_->GetTrack()->GetGlobalTime();
-      const double local_time   = step_->GetTrack()->GetLocalTime();
-      const double proper_time  = step_->GetTrack()->GetProperTime();
-      step_->GetTrack()->GetVertexPosition();
-      step_->GetTrack()->GetVertexMomentumDirection();
-      step_->GetTrack()->GetLogicalVolumeAtVertex();
-      step_->GetTrack()->GetWeight();
-      */
 
       bool primary_track           = false;
       bool delta_ray_from_an_alpha = false;
@@ -796,13 +745,6 @@ namespace mctools {
         //unsigned int osize = _hits_buffer.size();
         sensitive_hit a_hit;
         _hits_buffer_.push_back(a_hit);
-        //unsigned int nsize = _hits_buffer.size();
-        // cerr << datatools::io::devel
-        //      << "snemo::g4::sensitive_detector::ProcessHits: "
-        //      << "Increase the size of the buffer of sensitive hits for detector '"
-        //      << _sensitive_category_ << "' from " << osize
-        //      << " to " << nsize << "(capacity=" << _hits_buffer.capacity() << ")!"
-        //      << endl;
       }
       // Increment the hit counter :
       _used_hits_count_++;
@@ -864,11 +806,6 @@ namespace mctools {
           hit_aux.store_string(mctools::track_utils::CREATOR_PROCESS_KEY,
                                 _track_info_ptr_->get_creator_process_name());
         }
-
-        // if (_record_creator_category_ && ! _track_info_ptr_->get_creator_sensitive_category().empty()) {
-        //   hit_aux.store_string(mctools::track_utils::CREATOR_CATEGORY_KEY,
-        //                         _track_info_ptr_->get_creator_sensitive_category());
-        // }
 
         if (_record_primary_particle_ && primary_track) {
           hit_aux.store_flag(mctools::track_utils::PRIMARY_PARTICLE_FLAG);
@@ -1030,18 +967,6 @@ namespace mctools {
              << "Hits buffer capacity        : "
              << _hits_buffer_capacity_ << std::endl;
       }
-
-      // {
-      //   out_ << indent << datatools::i_tree_dumpable::tag
-      //        << "Properties : "
-      //        << std::endl;
-      //   {
-      //     ostringstream indent_oss;
-      //     indent_oss << indent;
-      //     indent_oss << datatools::i_tree_dumpable::skip_tag;
-      //     _aux.tree_dump(out_, "", indent_oss.str());
-      //   }
-      // }
 
       // Associated step hit processor
       {
