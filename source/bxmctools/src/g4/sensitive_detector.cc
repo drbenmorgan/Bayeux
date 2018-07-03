@@ -666,27 +666,27 @@ namespace mctools {
       bool delta_ray_from_an_alpha = false;
       bool major_track             = false;
 
-      // Grabbing the track history to fill G4 track info
-      track_history & the_track_history = _manager_->grab_track_history();
+      // Fill track history if needed
       if (_manager_->has_track_history()) {
+        track_history & the_track_history = _manager_->grab_track_history();
+
         if ((_track_info_ptr_ == 0) ||(_track_info_ptr_->get_id() != track_id)) {
           // Here we don't have current track info at hand:
           if (! the_track_history.has_track_info(track_id)) {
             // infos about this track are not registered yet,
             // we add a new record and link it :
-            track_history::track_info dummy;
-            the_track_history.add_track_info(track_id, dummy);
-            track_history::track_info & ti = the_track_history.grab_track_info(track_id);
+            track_history::track_info ti;
             ti.set_id(track_id);
             ti.set_parent_id(parent_track_id);
             ti.set_particle_name(track_particle_name);
+
             if (currentTrack->GetCreatorProcess()) {
               const std::string & process_name
                 = currentTrack->GetCreatorProcess()->GetProcessName();
               ti.set_creator_process_name(process_name);
             }
-            // const std::string & category = get_sensitive_category();
-            // ti.set_creator_sensitive_category(category);
+
+            the_track_history.add_track_info(track_id, ti);
             _track_info_ptr_ = &ti;
             _parent_track_info_ptr_ = 0;
           } else {
@@ -695,20 +695,16 @@ namespace mctools {
             _parent_track_info_ptr_ = 0;
          }
         }
+
         primary_track = _track_info_ptr_->is_primary();
 
         // Set the 'major_track' flag :
         // MOD: FM+AC 2014-09-05: accept neutral particles as "major" tracks(gamma, neutron...):
         // const bool has_charge =(step_->GetTrack()->GetDynamicParticle()->GetCharge() != 0.0);
         // if (has_charge) {
-          if (primary_track) {
-            major_track = true;
-          }
-          const double kinetic_energy= currentTrack->GetKineticEnergy();
-          if (kinetic_energy >= _major_track_minimum_energy_) {
-            major_track = true;
-          }
-          // }
+        if (primary_track || currentTrack->GetKineticEnergy() >= _major_track_minimum_energy_) {
+          major_track = true;
+        }
 
         if (_record_delta_ray_from_alpha_) {
           /* Identify a delta-ray generated along
@@ -734,7 +730,6 @@ namespace mctools {
             }
           }
         } // _record_delta_ray_from_alpha_
-
       } // if (_using_track_infos)
 
       if (_used_hits_count_ ==(int) _hits_buffer_.size()) {
