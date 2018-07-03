@@ -631,14 +631,6 @@ namespace mctools {
                                             G4TouchableHistory * /*touchable_history_*/)
     {
       DT_LOG_TRACE(_logprio(),"Entering...");
-      const bool do_process_hits = true;
-      if (! do_process_hits) {
-        DT_LOG_TRACE(_logprio(),"Exiting.");
-        return false;
-      }
-
-      DT_LOG_TRACE(_logprio(),"Buffer size = " << _hits_buffer_.size());
-      DT_LOG_TRACE(_logprio(),"Hit count = " << _used_hits_count_);
 
       const double energy_deposit = step_->GetTotalEnergyDeposit();
       if (energy_deposit <= 1.e-10 * CLHEP::keV){
@@ -662,9 +654,13 @@ namespace mctools {
         _manager_->grab_CT_map()["SD"].start();
       }
 
-      const std::string track_particle_name = step_->GetTrack()->GetDefinition()->GetParticleName();
-      const int track_id        = step_->GetTrack()->GetTrackID();
-      const int parent_track_id = step_->GetTrack()->GetParentID();
+      // Cache stuff we need later on
+      G4Track* currentTrack = step_->GetTrack();
+      G4ParticleDefinition* currentParticle = currentTrack->GetDefinition();
+
+      const std::string& track_particle_name = currentParticle->GetParticleName();
+      const int track_id        = currentTrack->GetTrackID();
+      const int parent_track_id = currentTrack->GetParentID();
 
       bool primary_track           = false;
       bool delta_ray_from_an_alpha = false;
@@ -684,9 +680,9 @@ namespace mctools {
             ti.set_id(track_id);
             ti.set_parent_id(parent_track_id);
             ti.set_particle_name(track_particle_name);
-            if (step_->GetTrack()->GetCreatorProcess()) {
+            if (currentTrack->GetCreatorProcess()) {
               const std::string & process_name
-                = step_->GetTrack()->GetCreatorProcess()->GetProcessName();
+                = currentTrack->GetCreatorProcess()->GetProcessName();
               ti.set_creator_process_name(process_name);
             }
             // const std::string & category = get_sensitive_category();
@@ -708,7 +704,7 @@ namespace mctools {
           if (primary_track) {
             major_track = true;
           }
-          const double kinetic_energy= step_->GetTrack()->GetKineticEnergy();
+          const double kinetic_energy= currentTrack->GetKineticEnergy();
           if (kinetic_energy >= _major_track_minimum_energy_) {
             major_track = true;
           }
@@ -750,40 +746,39 @@ namespace mctools {
       _used_hits_count_++;
 
       sensitive_hit * new_hit = &_hits_buffer_[_used_hits_count_ - 1];
-
-      DT_LOG_TRACE(_logprio(), "Buffer size = " << _hits_buffer_.size());
-      DT_LOG_TRACE(_logprio(), "Hit count = " << _used_hits_count_);
-      DT_LOG_TRACE(_logprio(), "New hit @ " << new_hit << " : ");
-      if (_logprio() == datatools::logger::PRIO_TRACE){
-        new_hit->get_hit_data().tree_dump(std::cerr);
-      }
+      auto& hit_data = new_hit->grab_hit_data();
 
       _number_of_sensitive_steps_++;
+
       // 2011-05-26 FM : was using "step_->GetTrack()->GetGlobalTime()";
-      const double time_start = step_->GetPreStepPoint()->GetGlobalTime();
-      const double time_stop = step_->GetPostStepPoint()->GetGlobalTime();
-      new_hit->grab_hit_data().set_time_start(time_start);
-      new_hit->grab_hit_data().set_time_stop(time_stop);
-      new_hit->grab_hit_data().set_position_start(step_->GetPreStepPoint()->GetPosition());
-      new_hit->grab_hit_data().set_position_stop(step_->GetPostStepPoint()->GetPosition());
-      new_hit->grab_hit_data().set_energy_deposit(energy_deposit);
-      new_hit->grab_hit_data().set_particle_name(track_particle_name);
+      G4StepPoint* currentPreStepPoint = step_->GetPreStepPoint();
+      G4StepPoint* currentPostStepPoint = step_->GetPostStepPoint();
+
+      const double time_start = currentPreStepPoint->GetGlobalTime();
+      const double time_stop = currentPostStepPoint->GetGlobalTime();
+      hit_data.set_time_start(time_start);
+      hit_data.set_time_stop(time_stop);
+
+      hit_data.set_position_start(currentPreStepPoint->GetPosition());
+      hit_data.set_position_stop(currentPostStepPoint->GetPosition());
+      hit_data.set_energy_deposit(energy_deposit);
+      hit_data.set_particle_name(track_particle_name);
 
       // Add optional data :
       if (_record_momentum_) {
-        new_hit->grab_hit_data().set_momentum_start(step_->GetPreStepPoint()->GetMomentum());
-        new_hit->grab_hit_data().set_momentum_stop(step_->GetPostStepPoint()->GetMomentum());
+        hit_data.set_momentum_start(currentPreStepPoint->GetMomentum());
+        hit_data.set_momentum_stop(currentPostStepPoint->GetMomentum());
       }
 
       // Grab base hit auxiliaries
-      datatools::properties & hit_aux = new_hit->grab_hit_data().grab_auxiliaries();
+      datatools::properties & hit_aux = hit_data.grab_auxiliaries();
 
       // Add auxiliary properties :
       if (_record_kinetic_energy_) {
         hit_aux.store_real(mctools::track_utils::START_KINETIC_ENERGY_KEY,
-                            step_->GetPreStepPoint()->GetKineticEnergy());
+                            currentPreStepPoint->GetKineticEnergy());
         hit_aux.store_real(mctools::track_utils::STOP_KINETIC_ENERGY_KEY,
-                            step_->GetPostStepPoint()->GetKineticEnergy());
+                            currentPostStepPoint->GetKineticEnergy());
       }
 
       if (_record_step_length_) {
@@ -791,10 +786,10 @@ namespace mctools {
       }
 
       if (_record_boundaries_) {
-        if (step_->GetPreStepPoint()->GetStepStatus() == fGeomBoundary) {
+        if (currentPreStepPoint->GetStepStatus() == fGeomBoundary) {
           hit_aux.store_flag(mctools::track_utils::ENTERING_VOLUME_FLAG);
         }
-        if (step_->GetPostStepPoint()->GetStepStatus() == fGeomBoundary) {
+        if (currentPostStepPoint->GetStepStatus() == fGeomBoundary) {
           hit_aux.store_flag(mctools::track_utils::LEAVING_VOLUME_FLAG);
         }
       }
@@ -828,7 +823,7 @@ namespace mctools {
       if (_record_material_) {
         static std::string material_ref_key =
           geomtools::material::make_key(geomtools::material::material_ref_property());
-        const G4Material * the_g4_material = step_->GetTrack()->GetMaterial();
+        const G4Material * the_g4_material = currentTrack->GetMaterial();
         std::string material_ref = the_g4_material->GetName().data();
         boost::replace_all(material_ref, "__" , "::");
         hit_aux.store_string(material_ref_key, material_ref);
@@ -841,7 +836,7 @@ namespace mctools {
       }
 
       if (_record_g4_volume_properties_) {
-        G4VPhysicalVolume * volume = step_->GetTrack()->GetVolume();
+        G4VPhysicalVolume * volume = currentTrack->GetVolume();
         hit_aux.store_string(sensitive_utils::SENSITIVE_G4_VOLUME_NAME_KEY, volume->GetName());
         hit_aux.store_integer(sensitive_utils::SENSITIVE_G4_VOLUME_COPY_NUMBER_KEY, volume->GetCopyNo());
       }
