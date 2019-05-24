@@ -113,8 +113,7 @@ namespace datatools {
       static const std::string & meta_label();
     };
 
-  public:
-    //! \brief Section entry handle internal data stored within the dictionary of the multi_properties class.
+    //! \brief Inner class for section entry handle internal data stored within the dictionary of the multi_properties class.
     class entry
       : public datatools::i_tree_dumpable
     {
@@ -178,30 +177,18 @@ namespace datatools {
       properties  _properties_; //!< Container of properties stored in the section
 
       BOOST_SERIALIZATION_BASIC_DECLARATION()
-
     }; // multi_properties::entry
 
 
-  public:
 
+  public:
     /// Dictionary of section
     typedef std::map<std::string, entry> entries_col_type;
 
     /// List of handles on sections
     typedef std::list<entry*> entries_ordered_col_type;
 
-  private:
-
-    /// Private initialization
-    void _init_(const std::string & key_label_,
-                const std::string & meta_label_,
-                const std::string & description_);
-
-    /// Private copy
-    void _copy_impl_(const multi_properties &);
-
   public:
-
     /// Default constructor
     multi_properties();
 
@@ -263,7 +250,7 @@ namespace datatools {
     const std::string & get_meta_label() const;
 
     /// Return the number of entries
-    uint32_t size() const;
+    size_t size() const;
 
     /// Check if the collection of entries is empty
     bool empty() const;
@@ -293,10 +280,10 @@ namespace datatools {
     bool has_key_with_meta(const std::string & key_, const std::string & meta_) const;
 
     //! Returns the ith key
-    const std::string & key(int) const;
+    const std::string & key(size_t) const;
 
     //! Returns the ith ordered key
-    const std::string & ordered_key(int) const;
+    const std::string & ordered_key(size_t) const;
 
     /// Return an array of keys
     std::vector<std::string> keys() const;
@@ -357,7 +344,7 @@ namespace datatools {
     /// # - Comment lines start with a '#'.
     /// # This is a  comment line...
     /// # ...and this is another one.
-    /// 
+    ///
     /// # - Blank lines are ignored.
     /// # - Lines starting with '#@' are considered as optional metacomments
     /// #   with special embedded parsing options and/or actions.
@@ -408,9 +395,9 @@ namespace datatools {
     // #  This metacomment specifies the strategy for resolving the include directories from the
     // #  environment variable set by the "@include_path_env" directive. Supported strategies are:
     // #  - prepend (default) : directories from the environment variable have priority on explicit
-    // #    directories set through "@include_dir" directive. 
+    // #    directories set through "@include_dir" directive.
     // #  - append : directories from the environment variable do not have priority on explicit
-    // #    directories set through "@include_dir" directive. 
+    // #    directories set through "@include_dir" directive.
     // #  - clear : directories from the environment variable are the only ones used.
     //
     ///
@@ -463,16 +450,16 @@ namespace datatools {
     /// # does not fail the parsing.
     /// #@include_sections_try "optional_sections.conf"
     ///
-    /// \endcode 
-    /// 
+    /// \endcode
+    ///
     void read(const std::string & filename_, uint32_t options_ = 0);
 
     /// Merge with another multi_properties with overriding possibilities
     ///
     /// If the allow_override_sections_ flag is set, any section key existing in both multi_propreties
-    /// as records of the same type is overriden by the full section stored in other_. 
+    /// as records of the same type is overriden by the full section stored in other_.
     /// If the allow_override_section_ flag is set, any overridenkey existing in both propreties as records
-    /// of the same type is overriden by the value stored in other_. 
+    /// of the same type is overriden by the value stored in other_.
     void merge_with(const multi_properties & other_,
                     bool allow_override_sections_ = false,
                     bool allow_override_props_ = false);
@@ -483,7 +470,7 @@ namespace datatools {
     /// Smart print
     void print_tree(std::ostream & out_ = std::clog,
                     const boost::property_tree::ptree & options_ = empty_options()) const override;
-    
+
     /// Smart print
     ///
     /// \deprecated
@@ -491,6 +478,7 @@ namespace datatools {
                            const std::string & title_  = "",
                            const std::string & indent_ = "",
                            bool inherit_               = false) const override;
+
 
     /// \brief Reader/writer class for multi_properties objects
     class config
@@ -547,13 +535,13 @@ namespace datatools {
       /// Return the topic
       const std::string & get_topic() const;
 
-      /// Return the embedded file inclusion solver 
+      /// Return the embedded file inclusion solver
       const file_include & get_fi() const;
 
-      /// Return the mutable embedded file inclusion solver 
+      /// Return the mutable embedded file inclusion solver
       file_include & grab_fi();
 
-      /// Set the embedded file inclusion solver 
+      /// Set the embedded file inclusion solver
       void set_fi(const file_include &);
 
     protected:
@@ -569,7 +557,7 @@ namespace datatools {
 
       /// Store the current filename
       void _set_current_filename(const std::string & filename_);
-      
+
     private:
 
       // Configuration:
@@ -593,23 +581,19 @@ namespace datatools {
     }; //----- end of class config
 
   private:
+    /// Private initialization
+    void _init_ (const std::string & key_label_,
+                 const std::string & meta_label_,
+                 const std::string & description_);
 
-    /// Remove section implementation
-    void remove_impl(const std::string & key_);
-
-    /// Add section implementation
-    void add_impl(const std::string & key_,
-                  const std::string & meta_ = "");
+    /// Private copy
+    void _copy_impl_(const multi_properties &);
 
     /// Add section implementation
     properties & add_impl2(const std::string & key_,
                           const std::string & meta_ = "");
 
-    /// Set default values at construction
-    void init_defaults();
-
   private:
-
     std::string           _description_; //!< Description of the container
     std::string           _key_label_;   //!< The key label used by the container
     std::string           _meta_label_;  //!< The meta label used by the container

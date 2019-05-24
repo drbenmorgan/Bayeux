@@ -186,6 +186,57 @@ namespace datatools {
   //
   DATATOOLS_CLONEABLE_IMPLEMENTATION(multi_properties)
 
+  multi_properties::multi_properties()
+  {
+    _init_("", "", "");
+    return;
+  }
+
+  multi_properties::multi_properties(const std::string & key_label_,
+                                     const std::string & meta_label_)
+  {
+    _init_(key_label_,meta_label_,"");
+    return;
+  }
+
+  multi_properties::multi_properties(const std::string & key_label_,
+                                     const std::string & meta_label_,
+                                     const std::string & description_)
+  {
+    _init_(key_label_,meta_label_,description_);
+    return;
+  }
+
+  void multi_properties::_copy_impl_(const multi_properties & source_)
+  {
+    this->_description_ = source_._description_;
+    this->_key_label_   = source_._key_label_;
+    this->_meta_label_  = source_._meta_label_;
+    this->_entries_     = source_._entries_;
+
+    for (const auto& entry : source_._ordered_entries_) {
+      auto found = this->_entries_.find(entry->get_key());
+      this->_ordered_entries_.push_back(&found->second);
+    }
+
+    return;
+  }
+
+  multi_properties::multi_properties(const multi_properties & source_)
+  {
+    _copy_impl_(source_);
+    return;
+  }
+
+  multi_properties & multi_properties::operator=(const multi_properties & source_)
+  {
+    if (this != &source_) {
+      // protect against invalid self-assignment
+      _copy_impl_(source_);
+    }
+    return *this;
+  }
+
   bool multi_properties::has_description() const
   {
     return !_description_.empty();
@@ -252,7 +303,7 @@ namespace datatools {
     return _meta_label_;
   }
 
-  uint32_t multi_properties::size() const
+  size_t multi_properties::size() const
   {
     DT_THROW_IF (_ordered_entries_.size() != _entries_.size(),
                  std::runtime_error,
@@ -313,60 +364,11 @@ namespace datatools {
     return;
   }
 
-  multi_properties::multi_properties()
-  {
-    _init_("", "", "");
-    return;
-  }
-
-  multi_properties::multi_properties(const std::string & key_label_,
-                                     const std::string & meta_label_)
-  {
-    _init_(key_label_, meta_label_,"");
-    return;
-  }
-
-  multi_properties::multi_properties(const std::string & key_label_,
-                                     const std::string & meta_label_,
-                                     const std::string & description_)
-  {
-    _init_(key_label_, meta_label_, description_);
-    return;
-  }
-
-  void multi_properties::_copy_impl_(const multi_properties & source_)
-  {
-    this->_description_ = source_._description_;
-    this->_key_label_   = source_._key_label_;
-    this->_meta_label_  = source_._meta_label_;
-    this->_entries_     = source_._entries_;
-
-    // repopulate ordering list
-    for (const entry * source_entry : source_._ordered_entries_) {
-      auto found = this->_entries_.find(source_entry->get_key());
-      this->_ordered_entries_.push_back(&found->second);
-    }
-    return;
-  }
-
-  multi_properties::multi_properties(const multi_properties & source_)
-  {
-    _copy_impl_(source_);
-    return;
-  }
-
-  multi_properties & multi_properties::operator=(const multi_properties & source_)
-  {
-    if (this != &source_) {
-      // protect against invalid self-assignment
-      _copy_impl_(source_);
-    }
-    return *this;
-  }
 
   bool multi_properties::has_key(const std::string & key_) const
   {
-    return _entries_.find(key_) != _entries_.end();
+    auto found = _entries_.find(key_);
+    return found != _entries_.end();
   }
 
   bool multi_properties::has_key_with_meta(const std::string & key_, const std::string & a_meta) const
@@ -376,39 +378,25 @@ namespace datatools {
     return found->second.get_meta() == a_meta;
   }
 
-  const std::string & multi_properties::key (int key_index_) const
+  const std::string & multi_properties::key (size_t key_index_) const
   {
-    int key_count = 0;
+    DT_THROW_IF(key_index_ < 0 || key_index_ >= size(),
+                std::out_of_range,
+                "Out of range key index '"
+                << key_index_ << "' !");
     auto iter = _entries_.begin();
-    for (;
-         iter != _entries_.end();
-         ++iter, ++key_count) {
-      if (key_count == key_index_) {
-        break;
-      };
-    }
-    DT_THROW_IF (iter == _entries_.end(),
-                 std::logic_error,
-                 "Invalid key index '"
-                 << key_index_ << "' !");
+    std::advance(iter, key_index_);
     return iter->first;
   }
 
-  const std::string & multi_properties::ordered_key (int key_index_) const
+  const std::string & multi_properties::ordered_key (size_t key_index_) const
   {
-    int key_count = 0;
+    DT_THROW_IF(key_index_ < 0 || key_index_ >= size(),
+                std::out_of_range,
+                "Out of range ordered key index '"
+                << key_index_ << "' !");
     auto iter = _ordered_entries_.begin();
-    for (;
-         iter != _ordered_entries_.end();
-         ++iter, ++key_count) {
-      if (key_count == key_index_) {
-        break;
-      }
-    }
-    DT_THROW_IF (iter == _ordered_entries_.end(),
-                 std::logic_error,
-                 "Invalid ordered key index '"
-                 << key_index_ << "' !");
+    std::advance(iter, key_index_);
     return (*iter)->get_key ();
   }
 
@@ -452,7 +440,7 @@ namespace datatools {
     auto found = _entries_.find(key_);
     DT_THROW_IF (found == _entries_.end(),
                  std::logic_error,
-                 "Key '" << key_ << "' is not used !");
+                 "Key '" << key_ << "' is not found !");
     return found->second;
   }
 
@@ -461,7 +449,7 @@ namespace datatools {
     auto found = _entries_.find(key_);
     DT_THROW_IF (found == _entries_.end(),
                  std::logic_error,
-                 "Key '" << key_ << "' is not used !");
+                 "Key '" << key_ << "' is not found !");
     return found->second;
   }
 
@@ -480,46 +468,21 @@ namespace datatools {
     return this->grab(key_).grab_properties();
   }
 
-  void multi_properties::remove_impl(const std::string & key_)
-  {
-    auto found = _ordered_entries_.end();
-    for (auto i = _ordered_entries_.begin();
-         i != _ordered_entries_.end();
-         ++i) {
-      entry *e = *i;
-      if (e->get_key() == key_) {
-        found = i;
-        break;
-      }
-    }
-    if (found != _ordered_entries_.end()) {
-      _ordered_entries_.erase(found);
-    }
-    _entries_.erase(key_);
-    return;
-  }
 
   void multi_properties::remove(const std::string & key_)
   {
-    auto found = _entries_.find(key_);
-    DT_THROW_IF (found == _entries_.end(),
+    DT_THROW_IF (! this->has_key(key_),
                  std::logic_error,
                  "Key '" << key_ << "' is not used !");
-    multi_properties::remove_impl(key_);
-    return;
-  }
-
-  void multi_properties::add_impl(const std::string & key_,
-                                  const std::string & meta_)
-  {
-    add_impl2 (key_, meta_);
+    _ordered_entries_.remove_if([&key_](entry* e) {return (e->get_key() == key_);});
+    _entries_.erase(key_);
     return;
   }
 
   properties & multi_properties::add_impl2(const std::string & key_,
                                            const std::string & meta_)
   {
-    DT_THROW_IF (_entries_.find(key_) != _entries_.end(),
+    DT_THROW_IF (this->has_key(key_),
                  std::logic_error,
                  "Key '" << key_ << "' is already used !");
     /*
@@ -543,14 +506,13 @@ namespace datatools {
   void multi_properties::add(const std::string & key_,
                              const std::string & meta_)
   {
-    this->add_impl(key_, meta_);
+    this->add_impl2(key_, meta_);
   }
 
   void multi_properties::add(const std::string & key_,
                              const properties & a_props)
   {
-    this->add_impl(key_);
-    _entries_[key_].grab_properties() = a_props;
+    this->add_impl2(key_) = a_props;
     return;
   }
 
@@ -559,8 +521,7 @@ namespace datatools {
                              const std::string & meta_,
                              const properties & props_)
   {
-    this->add_impl(key_, meta_);
-    _entries_[key_].grab_properties() = props_;
+    this->add_impl2(key_, meta_) = props_;
     return;
   }
 
@@ -586,6 +547,7 @@ namespace datatools {
     r.read(filename_, *this);
     return;
   }
+
 
   void multi_properties::merge_with(const multi_properties & other_,
                                     bool allow_override_sections_,
@@ -613,26 +575,21 @@ namespace datatools {
         const properties & oprop = oentry.get_properties();
         properties & tprop = tentry.grab_properties();
         tprop.merge_with(oprop, allow_override_props_);
-      } 
+      }
     }
     return;
   }
 
+
+  // - Config inner class implementation
   multi_properties::config::config(uint32_t options_, const std::string & topic_)
   {
     _init_defaults();
-    if (options_ & SKIP_PRIVATE_SECTIONS) {
-      _skip_private_sections_ = true;
-    }
-    if (options_ & SKIP_PRIVATE_PROPS) {
-      _skip_private_properties_ = true;
-    }
-    if (options_ & FORBID_VARIANTS) {
-      _forbid_variants_ = true;
-    }
-    if (options_ & HEADER_FOOTER) {
-      _header_footer_ = true;
-    }
+    _skip_private_sections_ = (options_ & SKIP_PRIVATE_SECTIONS);
+    _skip_private_properties_ = (options_ & SKIP_PRIVATE_PROPS);
+    _forbid_variants_ = (options_ & FORBID_VARIANTS);
+    _header_footer_ = (options_ & HEADER_FOOTER);
+
     if (options_ & LOG_MUTE) {
       set_logging(datatools::logger::PRIO_FATAL);
     }
@@ -800,7 +757,7 @@ namespace datatools {
     return;
   }
 
-  
+
   void multi_properties::config::_write(std::ostream & out_, const multi_properties & target_)
   {
     uint32_t pcfg_options = 0;
@@ -840,13 +797,7 @@ namespace datatools {
       bool skip_this_section = false;
 
       // Apply criterion to skip the section:
-      if (_skip_private_sections_) {
-        if (properties::key_is_private(name)) {
-          skip_this_section = true;
-        }
-      }
-
-      if (skip_this_section) {
+      if (_skip_private_sections_ && properties::key_is_private(name)) {
         continue;
       }
 
@@ -1240,7 +1191,7 @@ namespace datatools {
               } else if (token == "@meta_label") {
                 if (!blocks_started) {
                   DT_THROW_IF(!mprop_meta_label.empty(), std::logic_error, "Directive '" << token << "' was already used!");
-                    
+
                   iss >> std::ws;
                   std::string meta_label;
                   uint32_t reader_flags = 0;
@@ -1562,7 +1513,7 @@ namespace datatools {
           }
           bool allow_override_sections = true;
           bool allow_override_props = true;
-          target_.merge_with(inc_mconf, allow_override_sections, allow_override_props);                    
+          target_.merge_with(inc_mconf, allow_override_sections, allow_override_props);
         }
         paths_to_be_included.clear();
       }
@@ -1631,11 +1582,13 @@ namespace datatools {
         const entry& a_entry = **i;
         const std::string & local_key = a_entry.get_key();
         outs << popts.indent;
+        outs << i_tree_dumpable::skip_tag;
+
         std::ostringstream indent_oss;
         indent_oss << popts.indent;
-        auto j = i;
-        outs << i_tree_dumpable::skip_tag;
         indent_oss << i_tree_dumpable::skip_tag;
+
+        auto j = i;
 
         if (++j == _ordered_entries_.end()) {
           outs << i_tree_dumpable::last_tag;
@@ -1644,6 +1597,7 @@ namespace datatools {
           outs << i_tree_dumpable::tag;
           indent_oss << i_tree_dumpable::skip_tag;
         }
+
         outs << "Entry : " << '"' << local_key << '"';
         if (properties::key_is_private(local_key)) outs << " [private]";
         outs << std::endl;
@@ -1669,12 +1623,14 @@ namespace datatools {
            ++i) {
         const entry *p_entry = *i;
         outs << popts.indent;
+        outs << i_tree_dumpable::inherit_skip_tag(popts.inherit);
+
         std::ostringstream indent_oss;
         indent_oss << popts.indent;
+        indent_oss << i_tree_dumpable::inherit_skip_tag(popts.inherit);
+
         auto j = i;
         j++;
-        outs << i_tree_dumpable::inherit_skip_tag(popts.inherit);
-        indent_oss << i_tree_dumpable::inherit_skip_tag(popts.inherit);
 
         if (j == _ordered_entries_.end()) {
           outs << i_tree_dumpable::last_tag;
@@ -1684,7 +1640,7 @@ namespace datatools {
           indent_oss << i_tree_dumpable::skip_tag;
         }
 
-        const std::string & local_key = p_entry->get_key();
+        std::string local_key = p_entry->get_key();
         outs << "Entry [rank=" << rank << "] : " << '"' << local_key << '"';
 
         if (properties::key_is_private(local_key)) outs << " [private]";
@@ -1739,11 +1695,13 @@ namespace datatools {
         const entry& a_entry = **i;
         const std::string & local_key = a_entry.get_key();
         out_ << indent_;
+        out_ << i_tree_dumpable::skip_tag;
+
         std::ostringstream indent_oss;
         indent_oss << indent_;
-        auto j = i;
-        out_ << i_tree_dumpable::skip_tag;
         indent_oss << i_tree_dumpable::skip_tag;
+
+        auto j = i;
 
         if (++j == _ordered_entries_.end()) {
           out_ << i_tree_dumpable::last_tag;
@@ -1777,12 +1735,14 @@ namespace datatools {
            ++i) {
         const entry *p_entry = *i;
         out_ << indent_;
+        out_ << i_tree_dumpable::inherit_skip_tag(inherit_);
+
         std::ostringstream indent_oss;
         indent_oss << indent_;
+        indent_oss << i_tree_dumpable::inherit_skip_tag(inherit_);
+
         auto j = i;
         j++;
-        out_ << i_tree_dumpable::inherit_skip_tag(inherit_);
-        indent_oss << i_tree_dumpable::inherit_skip_tag(inherit_);
 
         if (j == _ordered_entries_.end()) {
           out_ << i_tree_dumpable::last_tag;
@@ -1792,7 +1752,7 @@ namespace datatools {
           indent_oss << i_tree_dumpable::skip_tag;
         }
 
-        const std::string & local_key = p_entry->get_key();
+        std::string local_key = p_entry->get_key();
         out_ << "Entry [rank=" << rank << "] : " << '"' << local_key << '"';
 
         if (properties::key_is_private(local_key)) out_ << " [private]";
