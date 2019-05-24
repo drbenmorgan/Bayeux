@@ -38,13 +38,13 @@ namespace datatools {
     static const std::string _e;
     return _e;
   }
-  
+
   const std::string & none_label()
    {
      static const std::string _l("none");
     return _l;
   }
- 
+
   const std::string & yes_label()
     {
     static const std::string _l("yes");

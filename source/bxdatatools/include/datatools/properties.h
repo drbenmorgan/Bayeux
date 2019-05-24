@@ -69,7 +69,7 @@ namespace datatools {
    * - explicit support for units with real parameters
    * - string parameters possibly marked as filesystem path
    * - support for variant configuration parameter parsing
-   * 
+   *
    * The properties class is provided with different I/O mechnisms:
    *
    * - Boost/Serialization I/O (text, binary, XML archives)
@@ -118,9 +118,9 @@ namespace datatools {
    *
    * // Fetch properties:
    * bool test2 = my_parameters2.fetch_boolean("test");
-   * 
+   *
    * \endcode
-   * 
+   *
    */
   class properties
     : public datatools::i_serializable
@@ -129,12 +129,12 @@ namespace datatools {
     , public datatools::i_cloneable
   {
   public:
-    
+
     //----------------------------------------------------------------------
     //
     //! \brief Internal data stored within the dictionary of the properties class.
     class data {
-      
+
     public:
       static const int ERROR_SUCCESS = 0;
       static const int ERROR_FAILURE = 1;
@@ -174,7 +174,7 @@ namespace datatools {
       };
 
     public:
-      
+
       typedef std::vector<bool>        vbool;   ///< Container for boolean data
       typedef std::vector<int32_t>     vint;    ///< Container for integer data
       typedef std::vector<double>      vdouble; ///< Container for real data
@@ -378,7 +378,7 @@ namespace datatools {
                              bool inherit_ = false) const;
 
     private:
-      
+
       void clear_values_();
 
       void clear_unit_symbol_();
@@ -389,7 +389,7 @@ namespace datatools {
       BOOST_SERIALIZATION_BASIC_DECLARATION()
 
     private:
-      
+
       std::string _description_; //!< Description of the property
       /** 8-bits description flags :
        * Format is : VLUPSTTT
@@ -459,7 +459,7 @@ namespace datatools {
              int section_start_line_number_ = -1);
 
       /// Destructor
-      virtual ~config();
+      virtual ~config() = default;
 
       /// Return the logging priority threshold
       datatools::logger::priority get_logging() const;
@@ -475,7 +475,7 @@ namespace datatools {
       /// of an algorithm in a datatools::properties object:
       /// \code
       /// // A properties container:
-      /// datatools::properties algo_parameters; 
+      /// datatools::properties algo_parameters;
       ///
       /// // A parser for configuration parameters:
       /// uint32_t parser_options = 0;                                   // No print option
@@ -503,10 +503,10 @@ namespace datatools {
       /// # - Blank lines are ignored;
       /// # - Lines starting with '#@' are considered as optional meta-comments
       /// #   with special embedded parsing options and/or actions.
-      /// 
+      ///
       /// ### Header ###
       /// #
-      /// # The directives in this section can only be placed at the beginning of the 
+      /// # The directives in this section can only be placed at the beginning of the
       /// # file, always before the definitions of properties.
       ///
       /// #@topic "rootfinding"
@@ -518,7 +518,7 @@ namespace datatools {
       /// #@config[uration] Configuration parameters for a root finding algorithm
       /// #  This meta-comment provides the general description of the set of properties.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// #@include_dir "${DATATOOLS_TESTING_DIR}/config/user"
       /// #@include_dir "${DATATOOLS_TESTING_DIR}/config/defaults"
       /// #@include_dir "/var/${USER}/config"
@@ -527,27 +527,27 @@ namespace datatools {
       /// #  other properties files to be included are resolved. The first directive
       /// #  has the highest priority.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// #@include_path_env "DATATOOLS_INCLUDE_PATH"
       /// #  This meta-comment specifies the name of an environment variable which
       /// #  sets a list of absolute paths from which other properties files to
       /// #  be included are resolved. This list is preprended to the specified list
       /// #  above, if any.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// #@include_no_propagate
       /// #  This meta-comment specifies that the file inclusion rules are not
       /// #  propagated to included files which use their own rules.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// #@include "path"
       /// #  This meta-comment specifies the path of a file to be included.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// #@include_try "path"
       /// #  This meta-comment specifies the path of a file to try to include.
       /// #  This directive must be given before any property directive.
-      /// 
+      ///
       /// ### Definitions of properties ###
       ///
       /// # The '#@description text' optional meta-comments is used to document the next property to
@@ -555,7 +555,7 @@ namespace datatools {
       /// #@description The name of the method
       /// #  This meta-comment provides the specific description of next 'root_finder_type' property record.
       /// root_finder_type : string = "Newton-Raphson"
-      /// 
+      ///
       /// #@description The path of the log file
       /// #  The 'as path' directive below indicates that the string value must
       /// #  be considered as a filesystem path.
@@ -568,7 +568,7 @@ namespace datatools {
       /// #@description Absolute tolerance (with explicit dimension and associated unit)
       /// #  The 'as length' directive below indicates that the real value has an explicit
       /// #  dimension. The explicit 'um' unit symbol after the numerical value must
-      /// #  match the required dimension. 
+      /// #  match the required dimension.
       /// absolute_epsilon : real as length = 1.5 um  # Symbol for micrometer
       ///
       /// #@description A constant value
@@ -581,7 +581,7 @@ namespace datatools {
       ///
       /// #@description Maximum number of iterations
       /// max_iterations : integer = 100
-      /// 
+      ///
       /// #@description Array of guess values to start with (unit is explicitely given)
       /// #  The 'in mm' directive indicates that all real values in the array
       /// #  are explicitly expressed in 'mm' unit (of 'length' dimension).
@@ -598,11 +598,11 @@ namespace datatools {
       /// In case of real values, the unit ('in UNITNAME') should be the same that
       /// the one used for the previous definition in order to avoid confusion or inconsistency.
       /// guess_values : real[2] in mm += 3.2 1.32
-      ///    
+      ///
       /// #@description Algorithm verbosity
       /// logging : string = "mute"  # no print at all
       ///
-      /// #@allow_key_override 
+      /// #@allow_key_override
       /// #  From this point, overriding already defined/duplicated properties is allowed.
       /// #  By default, overriding properties is forbidden.
       ///
@@ -645,7 +645,7 @@ namespace datatools {
       /// #  the condition unset by default.
       /// #  If the variant system is not activated, the value '1.e-7' after
       /// #  the '|' character is used as a fallback value for this property.
-      /// # 
+      /// #
       /// default_epsilon : real = @variant(math:tolerance/is_user/epsilon|1.e-7)
       ///
       /// #@variant_if math:numerical_library/with_std|true
@@ -653,18 +653,18 @@ namespace datatools {
       /// #  The block is activated if and only if the "math:numerical_library/with_std"
       /// #  variant condition is set. This directive implies the use of a matching
       /// # '#@variant_endif' closing directive (see below).
-      /// 
+      ///
       /// #@description The identifier of the base pseudo-random number generator (PRNG)
       /// random_prng : string = "mersenne_twister"
       ///
       /// # The next property directive is commented out.
-      /// # #@description The PRNG seed 
+      /// # #@description The PRNG seed
       /// # random_seed : integer = 314159
-      /// 
-      /// #@description The path of the input file where to load initial PRNG state 
+      ///
+      /// #@description The path of the input file where to load initial PRNG state
       /// random_input_state_path : string as path = "${MYSETUP}/run_42/config/prng_state_in.state"
-      /// 
-      /// #@description The path of the output file where to save the final initial PRNG state 
+      ///
+      /// #@description The path of the output file where to save the final initial PRNG state
       /// random_output_state_path : string as path = "${MYSETUP}/run_42/product/prng_state_out.data"
       ///
       /// #@variant_endif # End of the variant conditional block of property directives
@@ -709,7 +709,7 @@ namespace datatools {
       ///
       ///
       /// \endcode
-      /// 
+      ///
       void read(std::istream & in_, properties & prop_);
 
       /// Read a properties container from an input file
@@ -752,13 +752,13 @@ namespace datatools {
       /// Return the section start line
       int get_section_start_line_number() const;
 
-      /// Return the embedded file inclusion solver 
+      /// Return the embedded file inclusion solver
       const file_include & get_fi() const;
 
-      /// Return the mutable embedded file inclusion solver 
+      /// Return the mutable embedded file inclusion solver
       file_include & grab_fi();
 
-      /// Override the embedded file inclusion solver 
+      /// Override the embedded file inclusion solver
       void set_fi(const file_include &);
 
       /// Reset
@@ -825,7 +825,7 @@ namespace datatools {
     static const std::string & private_property_prefix();
 
     // Typedefs declarations:
-    
+
   protected:
 
     typedef std::map<std::string, data> pmap;
@@ -833,7 +833,7 @@ namespace datatools {
   public:
 
     typedef std::vector<std::string> keys_col_type;
-    
+
     /// Default constructor
     properties() = default;
 
@@ -978,10 +978,10 @@ namespace datatools {
 
     //! Return the type of the data
     int get_type(const std::string & prop_key_) const;
-    
+
     /// Get a string label associated to the type of the data
     std::string get_type_label(const std::string & prop_key_) const;
-    
+
     //! Check if data with name 'prop_key_' is boolean
     bool is_boolean(const std::string & prop_key_) const;
 
@@ -1441,9 +1441,9 @@ namespace datatools {
     /// Merge with another properties with overriding possibilities
     ///
     /// If the allow_override_ flag is set, any key also existing in other_,
-    /// with the same type, is overriden by the value stored in other_. 
+    /// with the same type, is overriden by the value stored in other_.
     void merge_with(const properties & other_, bool allow_overrride_ = false);
-    
+
     std::string key_to_string(const std::string & key_) const;
 
     std::string key_to_property_string(const std::string & key_) const;
@@ -1477,7 +1477,7 @@ namespace datatools {
     static std::string build_property_key(const std::string & prefix_,
                                           const std::string & subkey_);
 
-     
+
   private:
 
     void _check_nokey_(const std::string & prop_key_) const;

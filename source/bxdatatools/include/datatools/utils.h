@@ -42,7 +42,7 @@ namespace datatools {
   const std::string & yes_label();
 
   const std::string & no_label();
-  
+
   /* Single precision utility functions */
 
   /// Invalidate a float (set at NaN):

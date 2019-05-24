@@ -187,6 +187,79 @@ namespace datatools {
     return std::string{};
   }
 
+  properties::data::data(char type_, int size_)
+  {
+    _flags_  = 0;
+    this->init_values_(type_, size_);
+    return;
+  }
+
+  properties::data::data(bool value_, int size_)
+  {
+    _flags_  = 0;
+    this->init_values_(TYPE_BOOLEAN_SYMBOL, size_);
+    for (int i = 0; i < (int)this->size(); ++i) {
+      this->set_value(value_, i);
+    }
+    return;
+  }
+
+  properties::data::data(int value_, int size_)
+  {
+    _flags_  = 0;
+    this->init_values_(TYPE_INTEGER_SYMBOL, size_);
+    for (int i = 0; i < (int)this->size(); ++i) {
+      this->set_value(value_, i);
+    }
+    return;
+  }
+
+  properties::data::data(double value_, int size_)
+  {
+    _flags_  = 0;
+    this->init_values_(TYPE_REAL_SYMBOL, size_);
+    for (int i = 0; i < (int)this->size(); ++i)
+      {
+      this->set_value(value_, i);
+    }
+    return;
+  }
+
+  properties::data::data(const std::string & value_, int size_)
+  {
+    _flags_  = 0;
+    int code=0;
+    this->init_values_(TYPE_STRING_SYMBOL, size_);
+    DT_THROW_IF(has_forbidden_char(value_),
+                std::logic_error,
+                "Forbidden char in string '" << value_ << "'!");
+    for (int i = 0; i < (int)this->size(); ++i) {
+      code = this->set_value(value_, i);
+      DT_THROW_IF(code != ERROR_SUCCESS,
+                  std::logic_error,
+                  "Failure!");
+    }
+    return;
+  }
+
+  properties::data::data(const char* value_, int size_)
+  {
+    _flags_ = 0;
+    this->init_values_(TYPE_STRING_SYMBOL, size_);
+    std::string tmp;
+    if (value_ != 0) {
+      tmp = value_;
+      DT_THROW_IF(has_forbidden_char(tmp),
+                  std::logic_error,
+                  "Forbidden char in string '" << tmp << "'!");
+    }
+    for (int i = 0; i < (int)this->size(); ++i) {
+      this->set_value(tmp, i);
+    }
+    return;
+  }
+
+
   bool properties::data::has_forbidden_char(const std::string & str_)
   {
     return str_.find_first_of(STRING_FORBIDDEN_CHAR) != std::string::npos;
@@ -410,78 +483,6 @@ namespace datatools {
   bool properties::data::empty() const
   {
     return (this->size() == 0);
-  }
-
-  properties::data::data(char type_, int size_)
-  {
-    _flags_  = 0;
-    this->init_values_(type_, size_);
-    return;
-  }
-
-  properties::data::data(bool value_, int size_)
-  {
-    _flags_  = 0;
-    this->init_values_(TYPE_BOOLEAN_SYMBOL, size_);
-    for (int i = 0; i < (int)this->size(); ++i) {
-      this->set_value(value_, i);
-    }
-    return;
-  }
-
-  properties::data::data(int value_, int size_)
-  {
-    _flags_  = 0;
-    this->init_values_(TYPE_INTEGER_SYMBOL, size_);
-    for (int i = 0; i < (int)this->size(); ++i) {
-      this->set_value(value_, i);
-    }
-    return;
-  }
-
-  properties::data::data(double value_, int size_)
-  {
-    _flags_  = 0;
-    this->init_values_(TYPE_REAL_SYMBOL, size_);
-    for (int i = 0; i < (int)this->size(); ++i)
-      {
-        this->set_value(value_, i);
-      }
-    return;
-  }
-
-  properties::data::data(const std::string & value_, int size_)
-  {
-    _flags_  = 0;
-    int code=0;
-    this->init_values_(TYPE_STRING_SYMBOL, size_);
-    DT_THROW_IF(has_forbidden_char(value_),
-                std::logic_error,
-                "Forbidden char in string '" << value_ << "'!");
-    for (int i = 0; i < (int)this->size(); ++i) {
-      code = this->set_value(value_, i);
-      DT_THROW_IF(code != ERROR_SUCCESS,
-                  std::logic_error,
-                  "Failure!");
-    }
-    return;
-  }
-
-  properties::data::data(const char* value_, int size_)
-  {
-    _flags_ = 0;
-    this->init_values_(TYPE_STRING_SYMBOL, size_);
-    std::string tmp;
-    if (value_ != nullptr) {
-      tmp = value_;
-      DT_THROW_IF(has_forbidden_char(tmp),
-                  std::logic_error,
-                  "Forbidden char in string '" << tmp << "'!");
-    }
-    for (int i = 0; i < (int)this->size(); ++i) {
-      this->set_value(tmp, i);
-    }
-    return;
   }
 
   bool properties::data::index_is_valid(int a_index) const
@@ -792,6 +793,12 @@ namespace datatools {
   //----------------------------------------------------------------------
   // properties class implementation
   //
+  properties::properties(const std::string & description_)
+  {
+    this->set_description(description_);
+    return;
+  }
+
   const std::string & properties::private_property_prefix()
   {
     static std::string prefix;
@@ -885,14 +892,6 @@ namespace datatools {
     return _props_.empty();
   }
 
-
-  properties::properties(const std::string & description_)
-  {
-    this->set_description(description_);
-    return;
-  }
-
-
   DATATOOLS_CLONEABLE_IMPLEMENTATION(properties)
 
   void properties::erase(const std::string & prop_key_)
@@ -907,23 +906,36 @@ namespace datatools {
 
   void properties::erase_all_starting_with(const std::string & prefix_)
   {
-    keys_col_type local_keys;
-    this->keys_starting_with(local_keys, prefix_);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i){
-      this->erase(*i);
+    for (const auto& k : this->keys_starting_with(prefix_)) {
+      this->erase(k);
     }
     return;
   }
 
   void properties::erase_all_not_starting_with(const std::string & prefix_)
   {
-    keys_col_type local_keys;
-    keys_not_starting_with(local_keys, prefix_);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i){
-      this->erase(*i);
+    for (const auto& k : this->keys_not_starting_with(prefix_)) {
+      this->erase(k);
     }
     return;
   }
+
+  void properties::erase_all_ending_with(const std::string & suffix)
+  {
+    for (const auto& k : this->keys_ending_with(suffix)) {
+      this->erase(k);
+    }
+    return;
+  }
+
+  void properties::erase_all_not_ending_with(const std::string & suffix)
+  {
+    for (const auto& k : this->keys_not_ending_with(suffix)) {
+      this->erase(k);
+    }
+    return;
+  }
+
 
   void properties::export_and_rename_starting_with(properties & props_,
                                                    const std::string & prop_key_prefix_,
@@ -932,13 +944,10 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys_starting_with(local_keys, prop_key_prefix_);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i !=  local_keys.end(); ++i) {
-      auto & ptmp = const_cast<properties &>(*this);
-      std::string new_key = *i;
-      boost::replace_first(new_key, prop_key_prefix_, a_new_prefix);
-      props_._props_[new_key] = ptmp._props_[*i];
+
+    for (const auto& k : this->keys_starting_with(prop_key_prefix_)) {
+      auto new_key = boost::replace_first_copy(k, prop_key_prefix_, a_new_prefix);
+      props_._props_[new_key] = _props_.at(k);
     }
     return;
   }
@@ -948,12 +957,7 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys(local_keys);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      props_._props_[*i] = ptmp._props_[*i];
-    }
+    props_._props_.insert(_props_.begin(), _props_.end());
     return;
   }
 
@@ -963,13 +967,9 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys(local_keys);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      std::ostringstream new_key_oss;
-      new_key_oss << prefix_ << *i;
-      props_._props_[new_key_oss.str()] = ptmp._props_[*i];
+
+    for (const auto& pair : _props_) {
+      props_._props_[prefix_ + pair.first] = pair.second;
     }
     return;
   }
@@ -980,11 +980,8 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys_starting_with(local_keys, prefix_);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      props_._props_[*i] = ptmp._props_[*i];
+    for (const auto& k : this->keys_starting_with(prefix_)) {
+      props_._props_[k] = _props_.at(k);
     }
     return;
   }
@@ -995,31 +992,8 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys_not_starting_with(local_keys, prefix_);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i !=  local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      props_._props_[*i] = ptmp._props_[*i];
-    }
-    return;
-  }
-
-  void properties::erase_all_ending_with(const std::string & suffix)
-  {
-    keys_col_type local_keys;
-    this->keys_ending_with(local_keys, suffix);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      this->erase(*i);
-    }
-    return;
-  }
-
-  void properties::erase_all_not_ending_with(const std::string & suffix)
-  {
-    keys_col_type local_keys;
-    this->keys_not_ending_with(local_keys, suffix);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      this->erase(*i);
+    for (const auto& k : this->keys_not_starting_with(prefix_)) {
+      props_._props_[k] = _props_.at(k);
     }
     return;
   }
@@ -1030,11 +1004,8 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys_ending_with(local_keys, suffix);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i != local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      props_._props_[*i] = ptmp._props_[*i];
+    for (const auto& k : this->keys_ending_with(suffix)) {
+      props_._props_[k] = _props_.at(k);
     }
     return;
   }
@@ -1045,11 +1016,8 @@ namespace datatools {
     DT_THROW_IF(this == &props_,
                 std::logic_error,
                 "Self export is not allowed !");
-    keys_col_type local_keys;
-    this->keys_not_ending_with(local_keys, suffix);
-    for (keys_col_type::const_iterator i = local_keys.begin(); i !=  local_keys.end(); ++i) {
-      auto& ptmp = const_cast<properties &>(*this);
-      props_._props_[*i] = ptmp._props_[*i];
+    for (const auto& k : this->keys_not_ending_with(suffix)) {
+      props_._props_[k] = _props_.at(k);
     }
     return;
   }
@@ -1088,12 +1056,12 @@ namespace datatools {
     DT_THROW_IF(prefix_.empty(),
                 std::logic_error,
                 "Empty key prefix argument !");
-    size_t n = prefix_.size();
-    for (const auto& p : _props_) {
-      bool push = true;
-      if (p.first.substr(0, n) == prefix_) push = false;
-      if (push) some_keys.push_back(p.first);
+    for (const auto& pair : _props_) {
+      if (! boost::algorithm::starts_with(pair.first, prefix_)) {
+        some_keys.push_back(pair.first);
+      }
     }
+
     return;
   }
 
@@ -1112,11 +1080,10 @@ namespace datatools {
     DT_THROW_IF(prefix_.empty(),
                 std::logic_error,
                 "Empty key prefix argument !");
-    size_t n = prefix_.size();
-    for (const auto& p : _props_) {
-      if (p.first.size() < n) continue;
-      if (p.first.substr(0, n) == prefix_) {
-        some_keys.push_back(p.first);
+
+    for (const auto& pair : _props_) {
+      if (boost::algorithm::starts_with(pair.first, prefix_)) {
+        some_keys.push_back(pair.first);
       }
     }
     return;
@@ -1136,14 +1103,12 @@ namespace datatools {
     DT_THROW_IF(suffix.empty(),
                 std::logic_error,
                 "Empty key suffix argument !");
-    size_t n = suffix.size();
-    for (const auto& p : _props_) {
-      bool push = true;
-      if (p.first.substr(p.first.size() - n, p.first.size()) == suffix) {
-        push = false;
+    for (const auto& pair : _props_) {
+      if (! boost::algorithm::ends_with(pair.first, suffix)) {
+        prop_keys.push_back(pair.first);
       }
-      if (push) prop_keys.push_back(p.first);
     }
+
     return;
   }
 
@@ -1160,11 +1125,9 @@ namespace datatools {
     DT_THROW_IF(suffix.empty(),
                 std::logic_error,
                 "Empty key suffix argument in properties described by '" << get_description() << "' !");
-    size_t n = suffix.size();
-    for (const auto& p : _props_ ) {
-      if (p.first.size() < n) continue;
-      if (p.first.substr(p.first.size()-n, p.first.size()) == suffix) {
-        prop_keys.push_back(p.first);
+    for (const auto& pair : _props_) {
+      if (boost::algorithm::ends_with(pair.first, suffix)) {
+        prop_keys.push_back(pair.first);
       }
     }
     return;
@@ -1193,16 +1156,8 @@ namespace datatools {
 
   void properties::keys(std::vector<std::string> & some_keys_) const
   {
-    for (const auto& p : _props_) {
-      some_keys_.push_back(p.first);
-    }
-    return;
-  }
-
-  void properties::compute_keys(std::set<std::string> & some_keys_) const
-  {
-    for (const auto& p : _props_) {
-      some_keys_.insert(p.first);
+    for(const auto& pair : _props_) {
+      some_keys_.push_back(pair.first);
     }
     return;
   }
@@ -1228,19 +1183,12 @@ namespace datatools {
 
   const std::string & properties::key(int key_index_) const
   {
-    int key_count = 0;
-    auto iter = _props_.begin();
-    for (;
-         iter != _props_.end();
-         ++iter, ++key_count) {
-      if (key_count == key_index_) {
-        break;
-      };
-    }
-    DT_THROW_IF(iter == _props_.end(),
-                std::logic_error,
-                "Invalid key index '" << key_index_ << "' in properties described by '" << get_description() << "' !");
-    return iter->first;
+    DT_THROW_IF(key_index_ < 0 || key_index_ >= this->size(),
+                std::out_of_range,
+                "Out of range key index '" << key_index_ << "' in properties described by '" << get_description() << "' !");
+    auto start = _props_.begin();
+    std::advance(start, key_index_);
+    return start->first;
   }
 
   void properties::lock(const std::string & a_key)
@@ -1273,9 +1221,7 @@ namespace datatools {
 
   bool properties::key_is_private(const std::string & a_key)
   {
-    if (a_key.size() < 2) return false;
-    return a_key.substr(0, private_property_prefix().size())
-      == private_property_prefix();
+    return boost::algorithm::starts_with(a_key, private_property_prefix());
   }
 
   bool properties::key_is_public(const std::string & a_key)
@@ -2730,7 +2676,66 @@ namespace datatools {
 
   //----------------------------------------------------------------------
   // properties::config class implementation
-  //
+  // Contains the actual parsing of onput ASCII
+  properties::config::config(uint32_t options_,
+                             const std::string & topic_,
+                             const std::string & section_name_,
+                             int section_start_line_number_)
+  {
+    _init_defaults_();
+    _write_public_only_ = (options_ & SKIP_PRIVATE);
+    _forbid_variants_ = (options_ & FORBID_VARIANTS);
+    _forbid_include_ = (options_ & FORBID_INCLUDE);
+
+    if (options_ & LOG_MUTE) {
+      set_logging(datatools::logger::PRIO_FATAL);
+    }
+    if (options_ & LOG_DEBUG) {
+      set_logging(datatools::logger::PRIO_DEBUG);
+    }
+    if (options_ & LOG_TRACE) {
+      set_logging(datatools::logger::PRIO_TRACE);
+    }
+    if (options_ & LOG_WARNING) {
+      set_logging(datatools::logger::PRIO_WARNING);
+    }
+
+    _use_smart_modulo_ = (options_ & SMART_MODULO);
+
+    if (options_ & HEADER_FOOTER) {
+      _mode_ = MODE_HEADER_FOOTER;
+    }
+
+    _dont_clear_ = (options_ & DONT_CLEAR);
+
+    _resolve_path_ = (options_ & RESOLVE_PATH);
+
+    if (!topic_.empty()) {
+      set_topic(topic_);
+    }
+    if (!section_name_.empty()) {
+      set_section_info(section_name_, section_start_line_number_);
+    }
+    return;
+  }
+
+  void properties::config::_init_defaults_()
+  {
+    _logging_ = datatools::logger::PRIO_FATAL;
+    _mode_ = MODE_BARE;
+    _dont_clear_ = false;
+    _use_smart_modulo_ = false;
+    _write_public_only_ = false;
+    _current_line_number_ = 0;
+    _forbid_variants_ = false;
+    _forbid_include_ = false;
+    _requested_topic_ = false;
+    _resolve_path_    = false;
+    _allow_key_override_ = false;
+    _section_start_line_number_ = -1;
+    return;
+  }
+
 
   bool properties::config::has_section_info() const
   {
@@ -2846,26 +2851,11 @@ namespace datatools {
         real_with_unit = true;
         unit_symbol = data_.get_unit_symbol();
       }
-      /*
-        else if (! a_unit_symbol.empty() || ! a_unit_label.empty()) {
-        real_with_unit = true;
-        if (! a_unit_symbol.empty()) {
-        unit_symbol = a_unit_symbol;
-        } else if (! a_unit_label.empty()) {
-        unit_symbol = units::get_default_unit_symbol_from_label(a_unit_label);
-        unit_label = a_unit_label;
-        }
-        }
-      */
       if (!unit_symbol.empty()) {
         std::string unit_label2;
         DT_THROW_IF(!units::find_unit(unit_symbol, unit_value, unit_label2),
                     std::logic_error,
                     "Invalid unit symbol '" << unit_symbol << "'!");
-        // DT_THROW_IF(unit_label2 != unit_label,
-        //             std::logic_error,
-        //             "No match between unit symbol '" << unit_symbol << "' and unit label '"
-        //             << a_unit_label << "'!");
       }
     }
     if (real_with_unit) {
@@ -3017,18 +3007,13 @@ namespace datatools {
       out_ << std::endl;
     }
 
-    if (has_topic() and _requested_topic_) {
-      out_ << "#@topic" << _format::SPACE_CHAR << get_topic() << std::endl;
-    }
-
-    for (const auto & p : props_._props_) {
-      if (_write_public_only_) {
-        if (key_is_private(p.first)) continue;
+    for (const auto& pair : props_._props_) {
+      if (_write_public_only_ && key_is_private(pair.first)) {
+        continue;
       }
 
-      write_data(out_, p.first, p.second, "", "", "");
+      write_data(out_, pair.first, pair.second, "", "", "");
       out_ << std::endl;
-
     }
 
     if (_mode_ == MODE_HEADER_FOOTER) {
@@ -3039,71 +3024,6 @@ namespace datatools {
   }
 
 
-  void properties::config::_init_defaults_()
-  {
-    _logging_ = datatools::logger::PRIO_FATAL;
-    _mode_ = MODE_BARE;
-    _dont_clear_ = false;
-    _use_smart_modulo_ = false;
-    _write_public_only_ = false;
-    _current_line_number_ = 0;
-    _forbid_variants_ = false;
-    _forbid_include_  = false;
-    _requested_topic_ = false;
-    _resolve_path_    = false;
-    _allow_key_override_ = false;
-    _section_start_line_number_ = -1;
-    return;
-  }
-
-  properties::config::config(uint32_t options_,
-                             const std::string & topic_,
-                             const std::string & section_name_,
-                             int section_start_line_number_)
-  {
-    _init_defaults_();
-    if (options_ & SKIP_PRIVATE) {
-      _write_public_only_ = true;
-    }
-    if (options_ & FORBID_VARIANTS) {
-      _forbid_variants_ = true;
-    }
-    if (options_ & FORBID_INCLUDE) {
-      _forbid_include_ = true;
-    }
-    if (options_ & LOG_MUTE) {
-      set_logging(datatools::logger::PRIO_FATAL);
-    }
-    if (options_ & LOG_DEBUG) {
-      set_logging(datatools::logger::PRIO_DEBUG);
-    }
-    if (options_ & LOG_TRACE) {
-      set_logging(datatools::logger::PRIO_TRACE);
-    }
-    if (options_ & LOG_WARNING) {
-      set_logging(datatools::logger::PRIO_WARNING);
-    }
-    if (options_ & SMART_MODULO) {
-      _use_smart_modulo_ = true;
-    }
-    if (options_ & HEADER_FOOTER) {
-      _mode_ = MODE_HEADER_FOOTER;
-    }
-    if (options_ & DONT_CLEAR) {
-      _dont_clear_ = true;
-    }
-    if (options_ & RESOLVE_PATH) {
-      _resolve_path_ = true;
-    }
-    if (!topic_.empty()) {
-      set_topic(topic_);
-    }
-    if (!section_name_.empty()) {
-      set_section_info(section_name_, section_start_line_number_);
-    }
-    return;
-  }
-
   datatools::logger::priority properties::config::get_logging() const
   {
     return _logging_;
@@ -3112,11 +3032,6 @@ namespace datatools {
   void properties::config::set_logging(datatools::logger::priority p_)
   {
     _logging_ = p_;
-    return;
-  }
-
-  properties::config::~config()
-  {
     return;
   }
 
