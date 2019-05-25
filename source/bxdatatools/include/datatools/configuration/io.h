@@ -67,6 +67,9 @@ namespace datatools {
         IO_DEFAULT     = 0                           //!< Default flags
       };
 
+      /// Default constructor
+      explicit ascii_io(uint32_t flags_ = IO_DEFAULT);
+
       /// Return unset parameter label
       static const std::string & unset_label();
 
@@ -79,10 +82,7 @@ namespace datatools {
       /// Return the current format version identifier
       static version_id current_format_version_id();
 
-      /// Default constructor
-      explicit ascii_io(uint32_t flags_ = IO_DEFAULT);
-
-      /// Store a variant registry record
+       /// Store a variant registry record
       void store_record(std::ostream & out_, const variant_record & vrec_) const;
 
       /// Load a variant registry record
@@ -127,10 +127,10 @@ namespace datatools {
       typedef std::map<std::string, std::size_t> statistics_type;
 
       /// Default constructor
-      variant_reporting();
+      variant_reporting() = default;
 
       /// Destructor
-      ~variant_reporting();
+      ~variant_reporting() = default;
 
       /// Check if a variant configuration repository is used
       bool has_repository() const;
@@ -169,9 +169,9 @@ namespace datatools {
 
     private:
 
-      logger::priority _logging_; //!< Logging priority
+      logger::priority _logging_ = datatools::logger::PRIO_FATAL; //!< Logging priority
       const variant_repository * _repository_ = nullptr; //!< Variant configuration repository handle
-      statistics_type _parameter_stats_; ///< Processing counters associated to variant parameters
+      statistics_type _parameter_stats_{}; ///< Processing counters associated to variant parameters
 
     };
 
@@ -186,14 +186,17 @@ namespace datatools {
         FLAG_REMOVE_QUOTES = datatools::bit_mask::bit01  //!< Flag to remove quotes around string parameters
       };
 
+      /// Default constructor
+      variant_preprocessor(unsigned int flags_ = 0);
+
+      /// Default destructor
+      ~variant_preprocessor() = default;
+
       /// Check the remove quotes flag
       bool is_remove_quotes() const;
 
       /// Set the remove quotes flag
       void set_remove_quotes(bool);
-
-      /// Default constructor
-      variant_preprocessor(unsigned int flags_ = 0);
 
       /// Check if a variant configuration repository is used
       bool has_repository() const;
@@ -302,7 +305,7 @@ namespace datatools {
 
     private:
 
-      logger::priority _logging_; //!< Logging priority
+      logger::priority _logging_ = logger::PRIO_FATAL; //!< Logging priority
       bool _remove_quotes_ = false; //!< Flag to remove quotes around string parameters
       const variant_repository * _repository_ = nullptr; //!< Variant configuration repository handle
 

@@ -87,21 +87,13 @@ namespace datatools {
       _with_title_       = false;
       _dont_ignore_unknown_registries_ = false;
       _logging_          = logger::PRIO_FATAL;
-      if (flags_ & IO_NO_HEADER) {
-        _no_header_ = true;
-      }
-      if (flags_ & IO_DESCRIPTION) {
-        _with_description_ = true;
-      }
-      if (flags_ & IO_TITLE) {
-        _with_title_ = true;
-      }
+      _no_header_ = (flags_ & IO_NO_HEADER);
+      _with_description_ = (flags_ & IO_DESCRIPTION);
+      _with_title_ = (flags_ & IO_TITLE);
       if (flags_ & IO_TRACE) {
         set_logging(logger::PRIO_TRACE);
       }
-      if (flags_ & IO_DONT_IGNORE_UNKNOWN_REGISTRY) {
-        _dont_ignore_unknown_registries_ = true;
-      }
+      _dont_ignore_unknown_registries_ = (flags_ & IO_DONT_IGNORE_UNKNOWN_REGISTRY);
       return;
     }
 
@@ -128,10 +120,8 @@ namespace datatools {
           out_ << " = ";
           if (cri.is_success()) {
             out_ << value_str << std::endl;
-            for (variant_record::daughter_dict_type::const_iterator i = vrec_.get_daughters().begin();
-                 i != vrec_.get_daughters().end();
-                 i++) {
-              const variant_record & dvrec = i->second.get_record();
+            for (const auto& i : vrec_.get_daughters()) {
+              const variant_record & dvrec = i.second.get_record();
               store_record(out_, dvrec);
             }
           } else {
@@ -140,11 +130,9 @@ namespace datatools {
         }
 
         if (vrec_.is_variant()) {
-          // out_ << "#@variant " << get_path() << "=" << "active" << std::endl;
           std::vector<std::string> ranked_params;
           vrec_.build_list_of_ranked_parameter_records(ranked_params);
-          for (std::size_t ipar = 0; ipar < ranked_params.size(); ipar++) {
-            const std::string & param_key = ranked_params[ipar];
+          for (const std::string& param_key : ranked_params) {
             const variant_record & dvrec = vrec_.get_daughter(param_key);
             store_record(out_, dvrec);
           }
@@ -220,10 +208,8 @@ namespace datatools {
                         << cri.get_error_message());
           }
           if (cri.is_success()) {
-            for (variant_record::daughter_dict_type::iterator i = vrec_.grab_daughters().begin();
-                 i != vrec_.grab_daughters().end();
-                 i++) {
-              variant_record & dvrec = i->second.grab_record();
+            for (auto& i : vrec_.grab_daughters()) {
+              variant_record & dvrec = i.second.grab_record();
               int error = load_record(in_, dvrec);
               if (error) {
                 DT_LOG_FATAL(_logging_, "Failed to load variant record '" << dvrec.get_path() << "'!");
@@ -236,8 +222,7 @@ namespace datatools {
         if (vrec_.is_variant()) {
           std::vector<std::string> ranked_params;
           vrec_.build_list_of_ranked_parameter_records(ranked_params);
-          for (std::size_t ipar = 0; ipar < ranked_params.size(); ipar++) {
-            const std::string & param_key = ranked_params[ipar];
+          for (const std::string& param_key : ranked_params) {
             variant_record & dvrec = vrec_.grab_daughter(param_key);
             int error = load_record(in_, dvrec);
             if (error) {
@@ -258,14 +243,13 @@ namespace datatools {
       std::vector<std::string> ranked_params;
       vreg_.list_of_ranked_parameters(ranked_params);
       std::vector<const variant_record *> top_records;
-      for (std::size_t i = 0; i < ranked_params.size(); i++) {
-        const std::string & param_name = ranked_params[i];
+      for (const std::string& param_name : ranked_params) {
         const variant_record & rec = vreg_.get_parameter_record(param_name);
         top_records.push_back(&rec);
       }
-      for (size_t i = 0; i < top_records.size(); i++) {
-        DT_LOG_TRACE(_logging_, "Top record = '" << top_records[i]->get_path() << "'");
-        store_record(out_, *top_records[i]);
+      for (const variant_record* vr : top_records) {
+        DT_LOG_TRACE(_logging_, "Top record = '" << vr->get_path() << "'");
+        store_record(out_, *vr);
       }
       DT_LOG_TRACE(_logging_, "Exiting.");
       return;
@@ -277,14 +261,13 @@ namespace datatools {
       std::vector<std::string> ranked_params;
       vreg_.list_of_ranked_parameters(ranked_params);
       std::vector<variant_record *> top_records;
-      for (std::size_t i = 0; i < ranked_params.size(); i++) {
-        const std::string & param_name = ranked_params[i];
+      for (const std::string& param_name : ranked_params) {
         variant_record & rec = vreg_.grab_parameter_record(param_name);
         top_records.push_back(&rec);
       }
-      for (size_t i = 0; i < top_records.size(); i++) {
-        DT_LOG_TRACE(_logging_, "Top record = '" << top_records[i]->get_path() << "'");
-        int error = load_record(in_, *top_records[i]);
+      for (variant_record* vr : top_records) {
+        DT_LOG_TRACE(_logging_, "Top record = '" << vr->get_path() << "'");
+        int error = load_record(in_, *vr);
         if (error) {
           return 1;
         }
@@ -308,8 +291,7 @@ namespace datatools {
       }
       std::vector<std::string> reg_keys;
       vrep_.build_ordered_registry_keys(reg_keys);
-      for (unsigned int ireg = 0; ireg < reg_keys.size(); ireg++) {
-        const std::string & reg_name = reg_keys[ireg];
+      for (const std::string& reg_name : reg_keys) {
         if (!vrep_.is_active_registry(reg_name)) {
           continue;
         }
@@ -504,7 +486,7 @@ namespace datatools {
     }
 
     /* --------------------------------- */
-
+    /* variant_reporting implementation */
     void variant_reporting::dump(std::ostream& out_) const
     {
       out_ << "variant_reporting::dump: \n";
@@ -521,19 +503,6 @@ namespace datatools {
     void variant_reporting::set_logging(logger::priority prio_)
     {
       _logging_ = prio_;
-      return;
-    }
-
-    variant_reporting::variant_reporting()
-    {
-      _logging_ = datatools::logger::PRIO_FATAL;
-      _repository_ = nullptr;
-      return;
-    }
-
-    variant_reporting::~variant_reporting()
-    {
-      reset_repository();
       return;
     }
 
@@ -564,14 +533,13 @@ namespace datatools {
       DT_LOG_TRACE_ENTERING(_logging_);
       std::vector<std::string> regkeys;
       _repository_->build_ordered_registry_keys(regkeys);
-      for (std::size_t ireg = 0; ireg < regkeys.size(); ireg++) {
-        const std::string & regname = regkeys[ireg];
+
+      for (const std::string& regname : regkeys) {
         if (!_repository_->is_active_registry(regname)) continue;
         const variant_registry & reg = _repository_->get_registry(regname);
         std::vector<std::string> setpars;
         reg.list_of_parameters(setpars, variant_registry::LIST_ACTIVE_ONLY);
-        for (std::size_t ipar = 0; ipar < setpars.size(); ipar++) {
-          const std::string & parname = setpars[ipar];
+        for (const std::string& parname : setpars) {
           std::string fullparpath = regname + ":" + parname;
           _parameter_stats_[fullparpath] = 0;
         }
@@ -627,12 +595,9 @@ namespace datatools {
     }
 
     /* --------------------------------- */
-
+    /* variant_preprocessor implementation */
     variant_preprocessor::variant_preprocessor(unsigned int flags_)
     {
-      _logging_ = logger::PRIO_FATAL;
-      _remove_quotes_ = false;
-      _repository_ = nullptr;
       if (flags_ & FLAG_TRACE) {
         set_logging(logger::PRIO_TRACE);
       }
@@ -975,8 +940,7 @@ namespace datatools {
     void variant_preprocessor::preprocess_args_options(const std::vector<std::string> & args_,
                                                        std::vector<std::string> & preprocessed_args_)
     {
-      for (int i = 0; i < (int) args_.size(); i++) {
-        const std::string & arg = args_[i];
+      for (const std::string& arg : args_) {
         std::string target;
         command::returned_info cri = preprocess(arg, target);
         DT_THROW_IF(cri.is_failure(),
