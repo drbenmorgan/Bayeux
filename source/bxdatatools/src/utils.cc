@@ -440,22 +440,20 @@ namespace datatools {
                                       std::string & install_path_key_,
                                       std::string & environ_path_key_)
   {
-    typedef fetch_path_processor::lib_info_keys_dict_type dict_type;
-    const dict_type & lik = fetch_path_processor::lib_info_keys();
-    dict_type::const_iterator found = lik.find(library_topic_);
+    const auto& lik = fetch_path_processor::lib_info_keys();
+    auto found = lik.find(library_topic_);
     if (found == lik.end()) {
       return false;
     }
-    bool valid = false;
     if (! found->second.install_path_key.empty()) {
       install_path_key_ = found->second.install_path_key;
-      valid = true;
+      return true;
     }
     if (! found->second.environ_path_key.empty()) {
       environ_path_key_ = found->second.environ_path_key;
-      valid = true;
+      return true;
     }
-    return valid;
+    return false;
   }
 
   const std::string & _gp::global_path(int action_,
@@ -525,13 +523,14 @@ namespace datatools {
 
   fetch_path_processor::fetch_path_processor(uint32_t use_mode_,
                                              const std::string & parent_path_)
+      // Use () initialization to allow implicit int -> bool
+      : _trace_(use_mode_ & USE_TRACE),
+        _use_global_path_(use_mode_ & USE_GLOBAL_PATH),
+        _use_env_(use_mode_ & USE_ENVIRON),
+        _use_kernel_libinfo_(use_mode_ & USE_KERNEL_LIBINFO),
+        _use_kernel_urn_query_(use_mode_ & USE_KERNEL_URN_QUERY),
+        _parent_path_{parent_path_}
   {
-    _trace_                = use_mode_ & USE_TRACE;
-    _use_global_path_      = use_mode_ & USE_GLOBAL_PATH;
-    _use_env_              = use_mode_ & USE_ENVIRON;
-    _use_kernel_libinfo_   = use_mode_ & USE_KERNEL_LIBINFO;
-    _use_kernel_urn_query_ = use_mode_ & USE_KERNEL_URN_QUERY;
-    _parent_path_ = parent_path_;
     return;
   }
 
@@ -539,13 +538,15 @@ namespace datatools {
                                              bool use_global_path_,
                                              bool use_env_,
                                              bool use_kernel_libinfo_,
-                                             bool use_kernel_urn_query_) {
-    _trace_ = false;
-    _parent_path_ = parent_path_;
-    _use_global_path_ = use_global_path_;
-    _use_env_ = use_env_;
-    _use_kernel_libinfo_ = use_kernel_libinfo_;
-    _use_kernel_urn_query_ = use_kernel_urn_query_;
+                                             bool use_kernel_urn_query_)
+      : _trace_{false},
+        _use_global_path_{use_global_path_},
+        _use_env_{use_env_},
+        _use_kernel_libinfo_{use_kernel_libinfo_},
+        _use_kernel_urn_query_{use_kernel_urn_query_},
+        _parent_path_{parent_path_}
+  {
+    return;
   }
 
   bool fetch_path_processor::process(std::string & path) {
@@ -644,23 +645,13 @@ namespace datatools {
   // Well, Boost Spirit is probably expensive for such a simple parsing
   // (compilation time and size of code explodes with many levels of templatization...)
   void fetch_path_processor::process_impl(std::string& path) {
-    bool trace = _trace_;
-    {
-      // Special environment variable to trace the resolution of path
-      char * env = getenv("DATATOOLS_FETCH_PATH_TRACE");
-      if (env != NULL) {
-        std::string str_env = env;
-        if (str_env == "1") {
-          trace = true;
-          DT_LOG_TRACE(datatools::logger::PRIO_TRACE,
-                       "Activating the TRACE logging level thanks to the 'DATATOOLS_FETCH_PATH_TRACE' environment variable for path '" << path << "'...");
-        }
-      }
-    }
+    // Special environment variable to trace the resolution of path
+    bool trace = (getenv("DATATOOLS_FETCH_PATH_TRACE") != NULL) ? true : _trace_;
 
     if (trace) {
       DT_LOG_TRACE(datatools::logger::PRIO_TRACE, "Entering...");
     }
+
     // working buffer:
     std::string text = path;
     // First we search for an URN scheme in the case the filename has been registered
@@ -711,6 +702,7 @@ namespace datatools {
       }
       text = urn_path;
     }
+
     bool registered_lib_topic = false;
     if (text[0] == '@') {
       if (!_use_kernel_libinfo_) {
@@ -807,11 +799,9 @@ namespace datatools {
       //   usleep(100000);
       //   wordfree( &p );
       // }
-      if (!error_message.empty()) {
-        DT_THROW_IF(true,
-                    std::logic_error,
-                    "Shell expansion error: " << error_message);
-      }
+      DT_THROW_IF(!error_message.empty(),
+                  std::logic_error,
+                  "Shell expansion error: " << error_message);
     } // if (_use_env_)
     path = text;
 
