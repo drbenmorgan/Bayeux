@@ -162,8 +162,8 @@ namespace datatools {
 
       static const char STRING_FORBIDDEN_CHAR = '"';
 
-      static const int SCALAR_DEF  = -1;
-      static const int SCALAR_SIZE =  1;
+      static const size_t SCALAR_DEF  = 0;
+      static const size_t SCALAR_SIZE = 1;
 
       /// \brief Provides static method for default values for each supported type
       struct defaults {
@@ -181,25 +181,25 @@ namespace datatools {
       typedef std::vector<std::string> vstring; ///< Container for character string data
 
     public:
+      /// Default constructor
+      /// Requires retention as some classes still expect this
+      //non-(construction-is-initialization) interface...
+      data(char type_ = TYPE_INTEGER_SYMBOL, size_t size_ = SCALAR_DEF);
 
-      /// Constructor
-      data(char type_ = TYPE_INTEGER_SYMBOL,
-           int size_ = SCALAR_DEF);
+      /// Constructor for boolean value
+      data(bool value_, size_t size_ = SCALAR_DEF);
 
-      /// Constructor
-      data(bool value_, int size_ = SCALAR_DEF);
+      /// Constructor for int value
+      data(int value_, size_t size_ = SCALAR_DEF);
 
-      /// Constructor
-      data(int value_, int size_ = SCALAR_DEF);
+      /// Constructor for double value
+      data(double value_, size_t size_ = SCALAR_DEF);
 
-      /// Constructor
-      data(double value_, int size_ = SCALAR_DEF);
+      /// Constructor for string value
+      data(const std::string & value_, size_t size_ = SCALAR_DEF);
 
-      /// Constructor
-      data(const std::string & value_, int size_ = SCALAR_DEF);
-
-      /// Constructor
-      data(const char* value_, int size_ = SCALAR_DEF);
+      /// Constructor for string value
+      data(const char* value_, size_t size_ = SCALAR_DEF);
 
       /// Destructor
       virtual ~data() = default;
@@ -232,9 +232,6 @@ namespace datatools {
 
       /// Get the unit symbol associated to the stored real data
       const std::string & get_unit_symbol() const;
-
-      /// Check if the data type is valid
-      bool has_type() const;
 
       /// Return type
       int get_type() const;
@@ -276,16 +273,16 @@ namespace datatools {
       bool is_unlocked() const;
 
       /// Assign N boolean values
-      int boolean(int size_ = SCALAR_DEF);
+      int boolean(size_t size_ = SCALAR_DEF);
 
       /// Assign N integer values
-      int integer(int size_ = SCALAR_DEF);
+      int integer(size_t size_ = SCALAR_DEF);
 
       /// Assign N real values
-      int real(int size_ = SCALAR_DEF);
+      int real(size_t size_ = SCALAR_DEF);
 
       /// Assign N string values
-      int string(int size_ = SCALAR_DEF);
+      int string(size_t size_ = SCALAR_DEF);
 
       /// Lock the value (make it unmutable)
       int lock();
@@ -294,40 +291,40 @@ namespace datatools {
       int unlock();
 
       /// Returns the size of the array of stored values (1 if scalar, >=0 if vector)
-      int32_t get_size() const;
+      size_t get_size() const;
 
       /// Returns the size of the array of stored values (1 if scalar, >=0 if vector)
-      int32_t size() const;
+      size_t size() const;
 
       /// Check if the value array is empty
       bool empty() const;
 
       /// Check if array index is valid
-      bool index_is_valid(int index_) const;
+      bool index_is_valid(size_t index_) const;
 
       /// Get the boolean value stored at a given rank
-      bool get_boolean_value(int index_ = 0) const;
+      bool get_boolean_value(size_t index_ = 0) const;
 
       /// Get the integer value stored at a given rank
-      int get_integer_value(int index_ = 0) const;
+      int get_integer_value(size_t index_ = 0) const;
 
       /// Get the real value stored at a given rank
-      double get_real_value(int index_ = 0) const;
+      double get_real_value(size_t index_ = 0) const;
 
       /// Get the string value stored at a given rank
-      std::string get_string_value(int index_ = 0) const;
+      std::string get_string_value(size_t index_ = 0) const;
 
       /// Set the boolean value at a given rank
-      int set_value(bool value_, int index_ = 0);
+      int set_value(bool value_, size_t index_ = 0);
 
       /// Set the integer value at a given rank
-      int set_value(int value_, int index_ = 0);
+      int set_value(int value_, size_t index_ = 0);
 
       /// Set the real value at a given rank
-      int set_value(double value_, int index_ = 0, bool explicit_unit_ = false);
+      int set_value(double value_, size_t index_ = 0, bool explicit_unit_ = false);
 
       /// Set the real value at a given rank
-      int set_value_with_unit(double value_, int index_ = 0, const std::string & unit_symbol_ = "");
+      int set_value_with_unit(double value_, size_t index_ = 0, const std::string & unit_symbol_ = "");
 
       /// Set the explicit unit flag
       int set_explicit_unit(bool explicit_unit_flag_);
@@ -336,22 +333,22 @@ namespace datatools {
       int set_explicit_path(bool explicit_path_flag_);
 
       /// Set the string value at a given rank
-      int set_value(const std::string & value_, int index_ = 0, bool explicit_path_flag_ = false);
+      int set_value(const std::string & value_, size_t index_ = 0, bool explicit_path_flag_ = false);
 
       /// Set the string value at a given rank
-      int set_value(const char * value_, int index_ = 0, bool explicit_path_flag_ = false);
+      int set_value(const char * value_, size_t index_ = 0, bool explicit_path_flag_ = false);
 
       /// Get the boolean value by reference stored at a given rank
-      int get_value(bool & value_, int index_ = 0) const;
+      int get_value(bool & value_, size_t index_ = 0) const;
 
       /// Get the integer value by reference stored at a given rank
-      int get_value(int & value_, int index_ = 0) const;
+      int get_value(int & value_, size_t index_ = 0) const;
 
       /// Get the real value by reference stored at a given rank
-      int get_value(double & value_, int index_ = 0) const;
+      int get_value(double & value_, size_t index_ = 0) const;
 
       /// Get the string value by reference stored at a given rank
-      int get_value(std::string & value_, int index_ = 0) const;
+      int get_value(std::string & value_, size_t index_ = 0) const;
 
       /// Get a string label associated to the type of the stored data
       std::string get_type_label() const;
@@ -384,7 +381,7 @@ namespace datatools {
       void clear_unit_symbol_();
 
       int init_values_(char type_ = TYPE_INTEGER_SYMBOL,
-                       int size_ = SCALAR_DEF);
+                       size_t size_ = SCALAR_DEF);
 
       BOOST_SERIALIZATION_BASIC_DECLARATION()
 
@@ -856,7 +853,7 @@ namespace datatools {
     properties & operator=(properties &&) = default;
 
     /// Returns the number of stored properties
-    int32_t size() const;
+    size_t size() const;
 
     /// Check if the properties container is empty
     bool empty() const;
@@ -914,7 +911,7 @@ namespace datatools {
     std::set<std::string> get_keys() const;
 
     //! Returns the ith key
-    const std::string & key(int) const;
+    const std::string & key(size_t) const;
 
     //! Set the list of keys.
     void keys(std::vector<std::string> &) const;
@@ -1001,10 +998,10 @@ namespace datatools {
     bool is_vector(const std::string & prop_key_) const;
 
     // 2012-11-14 FM : Should be deprecated
-    int32_t size(const std::string & prop_key_) const;
+    size_t size(const std::string & prop_key_) const;
 
     //! Returns the size of the data stored with a given key/name
-    int32_t key_size(const std::string & prop_key_) const;
+    size_t key_size(const std::string & prop_key_) const;
 
     //! Check if a property with given key/name exists
     bool has_key(const std::string & prop_key_) const;
@@ -1020,10 +1017,6 @@ namespace datatools {
 
     //! Set the description string associated to a property with given key/name
     void set_key_description (const std::string & prop_key_, const std::string &desc_);
-
-    // 2011-11-27 FM: could be useful
-    //! Rename a property with a new name.
-    //void rename (const std::string & prop_key_, const std::string & a_new_key);
 
     //! Erase property with a given key/name
     void erase(const std::string & key_);
@@ -1203,58 +1196,58 @@ namespace datatools {
                      const std::string & desc_ = "", bool lock_ = false);
 
     //! Change the value of an existing boolean property with a given key/name and index
-    void change(const std::string & key_, bool value_, int index_ = 0);
+    void change(const std::string & key_, bool value_, size_t index_ = 0);
 
     //! Change the value of an existing boolean property with a given key/name and index
-    void change_boolean(const std::string & key_, bool value_, int index_ = 0);
+    void change_boolean(const std::string & key_, bool value_, size_t index_ = 0);
 
     //! Change the value of an existing scalar boolean property with a given key/name
     void change_boolean_scalar(const std::string & key_, bool value_);
 
     //! Change the value of an existing vector boolean property with a given key/name and index
-    void change_boolean_vector(const std::string & key_, bool value_, int index_);
+    void change_boolean_vector(const std::string & key_, bool value_, size_t index_);
 
     //! Change the value of an existing integer property with a given key/name and index
-    void change(const std::string & key_, int value_, int index_ = 0);
+    void change(const std::string & key_, int value_, size_t index_ = 0);
 
     //! Change the value of an existing integer property with a given key/name and index
-    void change_integer(const std::string & key_, int value_, int index_ = 0);
+    void change_integer(const std::string & key_, int value_, size_t index_ = 0);
 
     //! Change the value of an existing integer scalar property with a given key/name
     void change_integer_scalar(const std::string & key_, int value_);
 
     //! Change the value of an existing integer vector property with a given key/name and index
-    void change_integer_vector(const std::string & key_, int value_, int index_);
+    void change_integer_vector(const std::string & key_, int value_, size_t index_);
 
     //! Change the value of an existing real property with a given key/name and index
-    void change(const std::string & key_, double value_, int index_ = 0);
+    void change(const std::string & key_, double value_, size_t index_ = 0);
 
     //! Change the value of an existing real property with a given key/name and index
-    void change_real(const std::string & key_, double value_, int index_ = 0);
+    void change_real(const std::string & key_, double value_, size_t index_ = 0);
 
     //! Change the value of an existing real scalar property with a given key/name
     void change_real_scalar(const std::string & key_, double value_);
 
     //! Change the value of an existing real vector property with a given key/name and index
-    void change_real_vector(const std::string & key_, double value_, int index_);
+    void change_real_vector(const std::string & key_, double value_, size_t index_);
 
     //! Change the value of an existing string property with a given key/name and index
     void change(const std::string & key_, const std::string & value_,
-                int index_ = 0);
+                size_t index_ = 0);
 
     //! Change the value of an existing string property with a given key/name and index
     void change_string(const std::string & key_, const std::string & value_,
-                       int index_ = 0);
+                       size_t index_ = 0);
 
     //! Change the value of an existing string scalar property with a given key/name
     void change_string_scalar(const std::string & key_, const std::string & value_);
 
     //! Change the value of an existing string vector property with a given key/name and index
     void change_string_vector(const std::string & key_, const std::string & value_,
-                              int index_);
+                              size_t index_);
 
     //! Change the value of an existing string property (C style) with a given key/name and index
-    void change(const std::string & key_, const char * value_, int index_ = 0);
+    void change(const std::string & key_, const char * value_, size_t index_ = 0);
 
     //! Change the full contents of an existing boolean vector property with a given key/name
     void change(const std::string & key_, const data::vbool & values_);
@@ -1320,17 +1313,17 @@ namespace datatools {
     bool has_flag(const std::string & key_) const;
 
     //! Fetch the boolean value stored with a given key/name and index
-    void fetch(const std::string & key_, bool & value_, int index_ = 0) const;
+    void fetch(const std::string & key_, bool & value_, size_t index_ = 0) const;
 
     //! Fetch the integer value stored with a given key/name and index
-    void fetch(const std::string & key_, int & value_, int index_ = 0) const;
+    void fetch(const std::string & key_, int & value_, size_t index_ = 0) const;
 
     //! Fetch the real value stored with a given key/name and index
-    void fetch(const std::string & key_, double & value_, int index_ = 0) const;
+    void fetch(const std::string & key_, double & value_, size_t index_ = 0) const;
 
     //! Fetch the string value stored with a given key/name and index
     void fetch(const std::string & key_, std::string & value_,
-               int index = 0) const;
+               size_t index = 0) const;
 
     //! Fetch the boolean vector value stored with a given key/name
     void fetch(const std::string & key_, data::vbool & values_) const;
@@ -1360,70 +1353,70 @@ namespace datatools {
     void fetch_positive(const std::string & key_, std::set<unsigned int> & values_, bool allow_duplication_ = false) const;
 
     //! Fetch the boolean value stored with a given key/name and index
-    bool fetch_boolean(const std::string &, int index_ = 0) const;
+    bool fetch_boolean(const std::string &, size_t index_ = 0) const;
 
     //! Fetch the boolean scalar value stored with a given key/name
     bool fetch_boolean_scalar(const std::string & name_) const;
 
     //! Fetch the boolean vector value stored with a given key/name and index
-    bool fetch_boolean_vector(const std::string & name_, int index_) const;
+    bool fetch_boolean_vector(const std::string & name_, size_t index_) const;
 
     //! Fetch the integer value stored with a given key/name and index
-    int fetch_integer(const std::string & name_, int index_ = 0) const;
+    int fetch_integer(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the positive integer value stored with a given key/name and index
-    unsigned int fetch_positive_integer(const std::string & name_, int index_ = 0) const;
+    unsigned int fetch_positive_integer(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the strict positive integer value stored with a given key/name and index
-    unsigned int fetch_strict_positive_integer(const std::string & name_, int index_ = 0) const;
+    unsigned int fetch_strict_positive_integer(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the ranged integer value stored with a given key/name and index
-    int fetch_range_integer(const std::string & name_, int min_, int max_, int index_ = 0) const;
+    int fetch_range_integer(const std::string & name_, int min_, int max_, size_t index_ = 0) const;
 
     //! Fetch the integer scalar value stored with a given key/name
     int fetch_integer_scalar(const std::string & name_) const;
 
     //! Fetch the integer vector value stored with a given key/name and index
-    int fetch_integer_vector(const std::string & name_ , int index_) const;
+    int fetch_integer_vector(const std::string & name_ , size_t index_) const;
 
     //! Fetch the real value stored with a given key/name and index
-    double fetch_real(const std::string & name_, int index_ = 0) const;
+    double fetch_real(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the dimensionless real value stored with a given key/name and index
-    double fetch_dimensionless_real(const std::string & name_, int index_ = 0) const;
+    double fetch_dimensionless_real(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the physical quantity (with its explicit unit) value stored with a given key/name and index
-    double fetch_real_with_explicit_unit(const std::string & name_, int index_ = 0) const;
+    double fetch_real_with_explicit_unit(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the physical quantity (with its explicit dimension) value stored with a given key/name and index
-    double fetch_real_with_explicit_dimension(const std::string & name_, const std::string & dimension_, int index_ = 0) const;
+    double fetch_real_with_explicit_dimension(const std::string & name_, const std::string & dimension_, size_t index_ = 0) const;
 
     //! Fetch the real scalar value stored with a given key/name
     double fetch_real_scalar(const std::string & name_) const;
 
     //! Fetch the real vector value stored with a given key/name and index
-    double fetch_real_vector(const std::string & name_, int index_) const;
+    double fetch_real_vector(const std::string & name_, size_t index_) const;
 
     //! Fetch the string value stored with a given key/name and index
-    std::string fetch_string(const std::string & name_, int index_ = 0) const;
+    std::string fetch_string(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch a single character value stored with a given key/name and index
-    char fetch_one_character(const std::string & name_, int index_ = 0) const;
+    char fetch_one_character(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch the string scalar value stored with a given key/name
     std::string fetch_string_scalar(const std::string & name_) const;
 
     //! Fetch the string vector value stored with a given key/name and index
-    std::string fetch_string_vector(const std::string & name_, int index_) const;
+    std::string fetch_string_vector(const std::string & name_, size_t index_) const;
 
     //! Fetch a file path from a string value stored with a given key/name and index
-    std::string fetch_path(const std::string & name_, int index_ = 0) const;
+    std::string fetch_path(const std::string & name_, size_t index_ = 0) const;
 
     //! Fetch a file path from a string scalar value stored with a given key/name
     std::string fetch_path_scalar(const std::string & name_) const;
 
     //! Fetch a file path from a string vector value stored with a given key/name and index
-    std::string fetch_path_vector(const std::string & name_, int index_) const;
+    std::string fetch_path_vector(const std::string & name_, size_t index_) const;
 
     //! Basic print
     void dump(std::ostream & out_ = std::clog) const;

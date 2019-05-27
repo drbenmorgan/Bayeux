@@ -380,7 +380,7 @@ namespace datatools {
 
   const std::string & multi_properties::key (size_t key_index_) const
   {
-    DT_THROW_IF(key_index_ < 0 || key_index_ >= size(),
+    DT_THROW_IF(key_index_ >= size(),
                 std::out_of_range,
                 "Out of range key index '"
                 << key_index_ << "' !");
@@ -391,7 +391,7 @@ namespace datatools {
 
   const std::string & multi_properties::ordered_key (size_t key_index_) const
   {
-    DT_THROW_IF(key_index_ < 0 || key_index_ >= size(),
+    DT_THROW_IF(key_index_ >= size(),
                 std::out_of_range,
                 "Out of range ordered key index '"
                 << key_index_ << "' !");
