@@ -24,19 +24,26 @@ namespace datatools {
       if (flags_ & FLAG_REMOVE_QUOTES) {
         set_remove_quotes(true);
       }
-      _set_default_kernel_repository();
-      return;
-    }
 
-    void variant_preprocessor::_set_default_kernel_repository()
-    {
       if (datatools::kernel::is_instantiated()) {
         const datatools::kernel & dtkl = datatools::kernel::const_instance();
         if (dtkl.has_effective_variant_repository()) {
-          const variant_repository & dkvr = dtkl.get_effective_variant_repository();
-          set_repository(dkvr);
+          set_repository(dtkl.get_effective_variant_repository());
         }
       }
+
+      return;
+    }
+
+    variant_preprocessor::variant_preprocessor(const variant_repository& rep_, unsigned int flags_)
+    {
+      if (flags_ & FLAG_TRACE) {
+        set_logging(logger::PRIO_TRACE);
+      }
+      if (flags_ & FLAG_REMOVE_QUOTES) {
+        set_remove_quotes(true);
+      }
+      set_repository(rep_);
       return;
     }
 

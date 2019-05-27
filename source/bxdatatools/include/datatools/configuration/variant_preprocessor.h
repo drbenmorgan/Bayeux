@@ -46,6 +46,9 @@ namespace datatools {
       /// Default constructor
       variant_preprocessor(unsigned int flags_ = 0);
 
+      /// Constructor taking repository and flags
+      variant_preprocessor(const variant_repository& rep_, unsigned int flags_);
+
       /// Default destructor
       ~variant_preprocessor() = default;
 
@@ -154,11 +157,6 @@ namespace datatools {
 
       /// Set the logging priority
       void set_logging(logger::priority);
-
-    private:
-
-      /// Install the kernel repository as the default one referenced by the preprocessor
-      void _set_default_kernel_repository();
 
     private:
       logger::priority _logging_ = logger::PRIO_FATAL; //!< Logging priority
