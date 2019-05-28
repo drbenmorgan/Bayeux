@@ -1565,21 +1565,19 @@ namespace datatools {
       }
 
       outs << std::endl;
-      for (auto i = _ordered_entries_.begin();
-           i != _ordered_entries_.end();
-           ++i) {
+      auto i = _ordered_entries_.begin();
+      auto end = _ordered_entries_.end();
+      auto last = std::prev(end);
+
+      for (; i != end; ++i) {
         const entry& a_entry = **i;
         const std::string & local_key = a_entry.get_key();
-        outs << popts.indent;
-        outs << i_tree_dumpable::skip_tag;
+        outs << popts.indent << i_tree_dumpable::skip_tag;
 
         std::ostringstream indent_oss;
-        indent_oss << popts.indent;
-        indent_oss << i_tree_dumpable::skip_tag;
+        indent_oss << popts.indent << i_tree_dumpable::skip_tag;
 
-        auto j = i;
-
-        if (++j == _ordered_entries_.end()) {
+        if (i == last) {
           outs << i_tree_dumpable::last_tag;
           indent_oss << i_tree_dumpable::last_skip_tag;
         } else {
@@ -1607,21 +1605,18 @@ namespace datatools {
       }
       outs << std::endl;
 
-      for (auto i = _ordered_entries_.begin();
-           i != _ordered_entries_.end();
-           ++i) {
+      auto i = _ordered_entries_.begin();
+      auto end = _ordered_entries_.end();
+      auto last = std::prev(end);
+
+      for (; i != end; ++i) {
         const entry *p_entry = *i;
-        outs << popts.indent;
-        outs << i_tree_dumpable::inherit_skip_tag(popts.inherit);
+        outs << popts.indent << i_tree_dumpable::inherit_skip_tag(popts.inherit);
 
         std::ostringstream indent_oss;
-        indent_oss << popts.indent;
-        indent_oss << i_tree_dumpable::inherit_skip_tag(popts.inherit);
+        indent_oss << popts.indent << i_tree_dumpable::inherit_skip_tag(popts.inherit);
 
-        auto j = i;
-        j++;
-
-        if (j == _ordered_entries_.end()) {
+        if (i == last) {
           outs << i_tree_dumpable::last_tag;
           indent_oss << i_tree_dumpable::inherit_skip_tag(popts.inherit);
         } else {
@@ -1678,21 +1673,19 @@ namespace datatools {
       }
 
       out_ << std::endl;
-      for (auto i = _ordered_entries_.begin();
-           i != _ordered_entries_.end();
-           ++i) {
+      auto i = _ordered_entries_.begin();
+      auto end = _ordered_entries_.end();
+      auto last = std::prev(end);
+      for (; i != end; ++i) {
         const entry& a_entry = **i;
         const std::string & local_key = a_entry.get_key();
-        out_ << indent_;
-        out_ << i_tree_dumpable::skip_tag;
+
+        out_ << indent_ << i_tree_dumpable::skip_tag;
 
         std::ostringstream indent_oss;
-        indent_oss << indent_;
-        indent_oss << i_tree_dumpable::skip_tag;
+        indent_oss << indent_ << i_tree_dumpable::skip_tag;
 
-        auto j = i;
-
-        if (++j == _ordered_entries_.end()) {
+        if (i == last) {
           out_ << i_tree_dumpable::last_tag;
           indent_oss << i_tree_dumpable::last_skip_tag;
         } else {
@@ -1719,21 +1712,17 @@ namespace datatools {
       }
       out_ << std::endl;
 
-      for (auto i = _ordered_entries_.begin();
-           i != _ordered_entries_.end();
-           ++i) {
+      auto i = _ordered_entries_.begin();
+      auto end = _ordered_entries_.end();
+      auto last = std::prev(end);
+      for (; i != end; ++i) {
         const entry *p_entry = *i;
-        out_ << indent_;
-        out_ << i_tree_dumpable::inherit_skip_tag(inherit_);
+        out_ << indent_ << i_tree_dumpable::inherit_skip_tag(inherit_);
 
         std::ostringstream indent_oss;
-        indent_oss << indent_;
-        indent_oss << i_tree_dumpable::inherit_skip_tag(inherit_);
+        indent_oss << indent_ << i_tree_dumpable::inherit_skip_tag(inherit_);
 
-        auto j = i;
-        j++;
-
-        if (j == _ordered_entries_.end()) {
+        if (i == last) {
           out_ << i_tree_dumpable::last_tag;
           indent_oss << i_tree_dumpable::inherit_skip_tag(inherit_);
         } else {
