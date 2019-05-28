@@ -752,12 +752,8 @@ namespace datatools {
 
     properties::config pcfg(pcfg_options);
 
-    if (has_topic() && _requested_topic_) {
-      out_ << "#@topic" << _format::SPACE_CHAR << get_topic() << std::endl;
-    }
-    if (target_.has_description()) {
-      out_ << "#@description" << _format::SPACE_CHAR << target_.get_description() << std::endl;
-    }
+    out_ << "#@topic" << _format::SPACE_CHAR << get_topic() << std::endl;
+    out_ << "#@description" << _format::SPACE_CHAR << target_.get_description() << std::endl;
     out_ << "#@key_label" << _format::SPACE_CHAR << _format::QUOTES_CHAR << target_.get_key_label() << _format::QUOTES_CHAR
           << std::endl;
     out_ << "#@meta_label" << _format::SPACE_CHAR << _format::QUOTES_CHAR << target_.get_meta_label() << _format::QUOTES_CHAR
@@ -795,6 +791,35 @@ namespace datatools {
 
   void multi_properties::config::_read(std::istream & in_, multi_properties & target_)
   {
+    // Try and factor out variant_preprocessor so we can set it ourselves
+    bool enable_variants = !_forbid_variants_;
+    bool variant_trace = enable_variants && datatools::logger::is_trace(_logging_);
+
+    unsigned int vpp_flags = variant_trace ? configuration::variant_preprocessor::FLAG_TRACE : 0;
+    if (variant_trace) {
+      // Special trace print:
+      vpp_flags |= configuration::variant_preprocessor::FLAG_TRACE;
+    }
+    // This is what we want to supply ourselves eventually
+    configuration::variant_preprocessor vpp(vpp_flags);
+    // -----
+
+    // The same for File inclusion support:
+    bool enable_file_inclusion = true;
+    // By default, file inclusion rules are propagated to included files:
+    bool include_file_propagate = true;
+    logger::priority fi_debug = logger::PRIO_FATAL;
+    if (_forbid_include_) {
+      enable_file_inclusion = false;
+    }    bool allow_fi_setup = true;
+    if (_fi_.is_initialized()) {
+      allow_fi_setup = false;
+    }
+    if (allow_fi_setup) {
+      _fi_.set_include_path_env_strategy(file_include::EV_PREPEND);
+    }
+    // -----
+
     std::string line_in;
     std::string mprop_description;
     std::string mprop_key_label;
@@ -819,40 +844,10 @@ namespace datatools {
     std::ostringstream current_block_oss;
     std::string current_key = "";
     std::string current_meta = "";
-
-    _current_line_number_ = 0;
-    // File inclusion support:
-    bool enable_file_inclusion = true;
-    // By default, file inclusion rules are propagated to included files:
-    bool include_file_propagate = true;
-    logger::priority fi_debug = logger::PRIO_FATAL;
-    if (_forbid_include_) {
-      enable_file_inclusion = false;
-    }    bool allow_fi_setup = true;
-    if (_fi_.is_initialized()) {
-      allow_fi_setup = false;
-    }
-    if (allow_fi_setup) {
-      _fi_.set_include_path_env_strategy(file_include::EV_PREPEND);
-    }
-    bool enable_variants = true;
-    bool variant_trace = false;
-    if (_forbid_variants_) {
-      enable_variants = false;
-    } else {
-      if (datatools::logger::is_trace(_logging_)) {
-        variant_trace = true;
-      }
-    }
     std::string variant_section_only;
     bool can_variant_section_only = false;
-    unsigned int vpp_flags = 0;
-    if (variant_trace) {
-      // Special trace print:
-      vpp_flags |= configuration::variant_preprocessor::FLAG_TRACE;
-    }
-    configuration::variant_preprocessor vpp(vpp_flags);
     std::vector<std::string> paths_to_be_included;
+    _current_line_number_ = 0;
 
     bool blocks_started  = false;
     while (in_) {
@@ -1431,6 +1426,9 @@ namespace datatools {
             if (_skip_private_properties_) {
               pcr_options |= properties::config::SKIP_PRIVATE;
             }
+
+            // NB: ALSO A HIDDEN CALL TO KERNEL HERE...
+            // - so need to pass down path expansion/varianr preprocessor
             properties::config pcr(pcr_options);
             pcr.set_reader_input(_current_filename_);
             pcr.set_section_info(current_key, closed_section_first_line_number);
@@ -1483,6 +1481,7 @@ namespace datatools {
       }
 
     } // while ( *_in )
+
     if (mprop_key_label.empty()
         && mprop_meta_label.empty()
         && mprop_format.empty()
