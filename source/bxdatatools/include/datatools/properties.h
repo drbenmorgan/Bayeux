@@ -780,9 +780,6 @@ namespace datatools {
       /// Set default values at construction
       void _init_defaults_();
 
-      /// Parsing implementation
-      void _read_(std::istream & in_, properties & prop_);
-
       /// Saving implementation
       void _write_(std::ostream & out_, const properties & prop_);
 

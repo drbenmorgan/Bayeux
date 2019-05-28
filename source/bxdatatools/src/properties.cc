@@ -3038,7 +3038,7 @@ namespace datatools {
                 std::logic_error,
                 "Cannot open filename '" + filename_ + "' (resolved as '" + filename + "'!");
     set_reader_input(filename, -1);
-    _read_(fin, props_);
+    read(fin, props_);
     fin.close();
     _current_filename_.clear();
     _current_line_number_ = 0;
@@ -3070,27 +3070,22 @@ namespace datatools {
 
   void properties::config::read(std::istream & in_, properties & props_)
   {
-    this->_read_(in_, props_);
-    return;
-  }
-
-  void properties::config::_read_(std::istream & in_, properties & props_)
-  {
-    if (!_dont_clear_) {
-      props_.clear();
-    }
-    datatools::logger::priority logging = _logging_;
-    DT_LOG_TRACE(logging, "Parsing a properties file...");
-    std::string line_in;
-    std::string prop_topic;
-    std::string prop_config;
-    std::string prop_description;
-    bool property_parsing_started = false;
-    bool allow_key_override = _allow_key_override_;
-    // bool allow_array_override_index = true;
-    bool line_goon = false;
-    // 2013-04-05 FM : default is to allow unit directives for real numbers
-    bool enable_real_with_unit = true;
+    // The variant preprocessor:
+    // for now this preprocessor uses the datatools' kernel variant repository,
+    // if it has been instanciated and properly feed by user (at application startup for example):
+    bool enable_variants = !_forbid_variants_;
+    bool variant_trace = enable_variants && datatools::logger::is_trace(_logging_);
+    unsigned int vpp_flags = variant_trace ? configuration::variant_preprocessor::FLAG_TRACE : 0;
+    configuration::variant_preprocessor vpp(vpp_flags);
+    // -----
+    // - Abstract up the path expander function(s)
+    //   NB only used in one place: the @include directive!
+    //   fetch_path_with_env also used in properties to on the fly resolve
+    //   paths, so needs an option there, either to hold as data member,
+    //   or add additional members to fetch_path.
+    //   If we have to have a path_expander_f here, should it come from
+    //   the input properties?
+    //auto path_expander_f = [](std::string& path) {datatools::fetch_path_with_env(path);};
     // File inclusion support:
     bool enable_file_inclusion = true;
     // By default, file inclusion rules are propagated to included files:
@@ -3107,17 +3102,26 @@ namespace datatools {
     if (allow_fi_setup) {
       _fi_.set_include_path_env_strategy(file_include::EV_PREPEND);
     }
-    bool enable_variants = true;
-    bool variant_trace = false;
-    if (_forbid_variants_) {
-      enable_variants = false;
-    } else {
-      if (datatools::logger::is_trace(logging)) {
-        variant_trace = true;
-      }
-    }
 
-    /* The variant_if directive must be placed before the property line:
+    // -----
+
+    if (!_dont_clear_) {
+      props_.clear();
+    }
+    datatools::logger::priority logging = _logging_;
+    DT_LOG_TRACE(logging, "Parsing a properties file...");
+    std::string line_in;
+    std::string prop_topic;
+    std::string prop_config;
+    std::string prop_description;
+    bool property_parsing_started = false;
+    bool allow_key_override = _allow_key_override_;
+    // bool allow_array_override_index = true;
+    bool line_goon = false;
+    // 2013-04-05 FM : default is to allow unit directives for real numbers
+    bool enable_real_with_unit = true;
+
+        /* The variant_if directive must be placed before the property line:
      *
      *  Examples:
      *
@@ -3152,18 +3156,10 @@ namespace datatools {
      *
      */
     std::string variant_only;
-    // The variant preprocessor:
-    // for now this preprocessor uses the datatools' kernel variant repository,
-    // if it has been instanciated and properly feed by user (at application startup for example):
 
-    unsigned int vpp_flags = 0;
-    if (variant_trace) {
-      // Special trace print:
-      vpp_flags |= configuration::variant_preprocessor::FLAG_TRACE;
-    }
-    configuration::variant_preprocessor vpp(vpp_flags);
     std::vector<std::string> paths_to_be_included;
     bool do_break = false;
+
     while (in_) {
       DT_LOG_TRACE(logging, "Loop on input stream...");
       std::string line_get;
@@ -3181,7 +3177,7 @@ namespace datatools {
       if (line_goon) {
         // Append to previous line:
         line_in += line_get;
-        DT_LOG_TRACE(logging, "Append to line='"<< line_in<< "'" );
+        DT_LOG_TRACE(logging, "Append to line='"<< line_in<< "'");
       } else {
         // A new line
         line_in = line_get;
@@ -3504,6 +3500,12 @@ namespace datatools {
                   } else {
                     include_config_file = include_desc;
                   }
+                  //datatools::fetch_path_with_env(include_config_file);
+                  //path_expander_f(include_config_file);
+                  //DT_LOG_TRACE(logging, "Included file is : '" << include_config_file << "'");
+                  //datatools::properties::read_config(include_config_file, props_);
+                  //return;
+                  //}
                   std::tuple<bool, std::string> fi_result = _fi_.resolve_err(include_config_file);
                   DT_PROP_CFG_READ_THROW_IF(! std::get<0>(fi_result),
                                             std::logic_error,
@@ -3699,16 +3701,6 @@ namespace datatools {
                                         _current_line_number_,
                                         "Invalid vector size !");
               char c = 0;
-              // DT_PROP_CFG_READ_THROW_IF(!vec_ss,
-              //                                std::logic_error,
-              //                                _current_filename_,
-              //                                _section_name_,
-              //                                _section_start_line_number_,
-              //                                _current_line_number_,
-              //                                "Cannot find expected vector size closing symbol for key '"
-              //                                << prop_key
-              //                                << "' at line '"
-              //                                << line << "'  !");
               vec_ss >> c;
               DT_PROP_CFG_READ_THROW_IF(c !=_format:: CLOSE_VECTOR,
                                         std::logic_error,
@@ -3895,8 +3887,7 @@ namespace datatools {
             /// 2013-03-07 FM : add support for embedded unit directives in real property :
             std::string requested_unit_label;
             std::string requested_unit_symbol;
-            double      requested_unit_value;
-            datatools::invalidate(requested_unit_value);
+            double      requested_unit_value = datatools::invalid_real_double();
             if (type == properties::data::TYPE_REAL_SYMBOL) {
               std::string token;
               type_ss >> std::ws >> token >> std::ws;
@@ -4044,33 +4035,28 @@ namespace datatools {
             }
             // Property is enabled by default:
             bool exhibit_property = true;
-            if (variant_if_blocks.size()) {
-              for (std::list<std::string>::const_iterator ivib = variant_if_blocks.begin();
-                   ivib != variant_if_blocks.end();
-                   ivib++) {
-                bool variant_if_active = false;
-                bool variant_if_reverse = false;
-                const std::string & variant_if_rule = *ivib;
-                command::returned_info cri = vpp.resolve_variant(variant_if_rule,
-                                                                 variant_if_active,
-                                                                 variant_if_reverse);
-                DT_PROP_CFG_READ_THROW_IF(cri.is_failure(),
-                                          std::logic_error,
-                                          _current_filename_,
-                                          _section_name_,
-                                          _section_start_line_number_,
-                                          _current_line_number_,
-                                          "Cannot preprocess variant if block directive from '"
-                                          << variant_if_rule << "' : "
-                                          << cri.get_error_message());
-                exhibit_property = variant_if_active;
-                if (variant_if_reverse) {
-                  exhibit_property = !variant_if_active;
-                }
-                if (!exhibit_property) {
-                  // We break at first inhibited conditional block:
-                  break;
-                }
+            for (const std::string& variant_if_rule : variant_if_blocks) {
+              bool variant_if_active = false;
+              bool variant_if_reverse = false;
+              command::returned_info cri = vpp.resolve_variant(variant_if_rule,
+                                                               variant_if_active,
+                                                               variant_if_reverse);
+              DT_PROP_CFG_READ_THROW_IF(cri.is_failure(),
+                                        std::logic_error,
+                                        _current_filename_,
+                                        _section_name_,
+                                        _section_start_line_number_,
+                                        _current_line_number_,
+                                        "Cannot preprocess variant if block directive from '"
+                                        << variant_if_rule << "' : "
+                                        << cri.get_error_message());
+              exhibit_property = variant_if_active;
+              if (variant_if_reverse) {
+                exhibit_property = !variant_if_active;
+              }
+              if (!exhibit_property) {
+                // We break at first inhibited conditional block:
+                break;
               }
             }
             bool variant_only_active = false;
@@ -4341,28 +4327,26 @@ namespace datatools {
                 std::string trailing_bits;
                 std::getline(iss, trailing_bits);
                 boost::trim(trailing_bits);
-                if (trailing_bits.length() > 0) {
-                  if (trailing_bits[0] != _format::COMMENT_CHAR) {
-                    std::ostringstream message_oss;
-                    if (!_current_filename_.empty()) {
-                      message_oss << "File '" << _current_filename_ << "': ";
-                    }
-                    if (_section_name_.empty()) {
-                      if (_current_line_number_ > 0) {
-                        message_oss << "Line #" << _current_line_number_ << ": ";
-                      }
-                    } else {
-                      message_oss << "Section '" << _section_name_ << "'";
-                      if (_section_start_line_number_ > 0) {
-                        message_oss << " starting at line #" << _section_start_line_number_;
-                      }
-                      message_oss << ": ";
-                    }
-                    message_oss << "There are unprocessed trailing characters '"
-                                << trailing_bits << "' after value record of property '"
-                                << prop_key << "'!";
-                    DT_LOG_WARNING(_logging_,message_oss.str());
+                if ((trailing_bits.length() > 0) && (trailing_bits[0] != _format::COMMENT_CHAR)) {
+                  std::ostringstream message_oss;
+                  if (!_current_filename_.empty()) {
+                    message_oss << "File '" << _current_filename_ << "': ";
                   }
+                  if (_section_name_.empty()) {
+                    if (_current_line_number_ > 0) {
+                      message_oss << "Line #" << _current_line_number_ << ": ";
+                    }
+                  } else {
+                    message_oss << "Section '" << _section_name_ << "'";
+                    if (_section_start_line_number_ > 0) {
+                      message_oss << " starting at line #" << _section_start_line_number_;
+                    }
+                    message_oss << ": ";
+                  }
+                  message_oss << "There are unprocessed trailing characters '"
+                      << trailing_bits << "' after value record of property '"
+                      << prop_key << "'!";
+                  DT_LOG_WARNING(_logging_,message_oss.str());
                 }
               }
               bool store_it = true;
