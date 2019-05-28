@@ -117,7 +117,6 @@ namespace datatools {
         LOG_DEBUG             = bit_mask::bit03, ///< Debug mode activation bit
         LOG_TRACE             = bit_mask::bit04, ///< Trace mode activation bit
         SKIP_PRIVATE_PROPS    = bit_mask::bit05, ///< Skip private properties in sections bit
-        HEADER_FOOTER         = bit_mask::bit06, ///< Use header/footer (write)
         DONT_CLEAR            = bit_mask::bit07, ///< Don't clear before parsing bit (read)
         REQUESTED_TOPIC       = bit_mask::bit08, ///< Requested topic (read/write)
         RESOLVE_PATH          = bit_mask::bit09, ///< Resolve path for input filename (read/write)
@@ -188,7 +187,6 @@ namespace datatools {
       bool _skip_private_sections_;   ///< Flag to skip private sections (read/write)
       bool _skip_private_properties_; ///< Flag to skip private properties in sections (read/write)
       bool _forbid_variants_;         ///< Flag to forbid variant directives (read)
-      bool _header_footer_;           ///< Flag to print header/footer (write)
       bool _requested_topic_;         ///< Flag to activate topic matching (read/write)
       std::string _topic_;            ///< Topic to be validated
       bool _resolve_path_;            ///< Explicitely resolve path for input/output filenames (read/write)
@@ -412,7 +410,7 @@ namespace datatools {
 
     /// Write to a configuration file
     void write(const std::string & filename_,
-               uint32_t options_ = config::HEADER_FOOTER | config::SKIP_PRIVATE_SECTIONS) const;
+               uint32_t options_ = config::SKIP_PRIVATE_SECTIONS) const;
 
     /// Read a multi_properties container from an input stream
     ///

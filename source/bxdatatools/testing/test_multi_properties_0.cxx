@@ -53,8 +53,7 @@ int main (int /* argc_ */, char ** /* argv_ */)
     my_bag_of_bags.grab_section ("shape").store ("author", "Pablo Picasso");
 
     // Save in ASCII file:
-    my_bag_of_bags.write ("my_bag_of_bags.conf",
-                          datatools::multi_properties::config::HEADER_FOOTER);
+    my_bag_of_bags.write ("my_bag_of_bags.conf");
   }
 
   datatools::multi_properties copy_bag;

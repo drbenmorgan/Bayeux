@@ -577,7 +577,6 @@ namespace datatools {
     _skip_private_sections_ = (options_ & SKIP_PRIVATE_SECTIONS);
     _skip_private_properties_ = (options_ & SKIP_PRIVATE_PROPS);
     _forbid_variants_ = (options_ & FORBID_VARIANTS);
-    _header_footer_ = (options_ & HEADER_FOOTER);
 
     if (options_ & LOG_MUTE) {
       set_logging(datatools::logger::PRIO_FATAL);
@@ -620,7 +619,6 @@ namespace datatools {
     _skip_private_sections_ = false;
     _skip_private_properties_ = false;
     _forbid_variants_ = false;
-    _header_footer_ = false;
     _requested_topic_ = false;
     _resolve_path_ = false;
     _current_line_number_ = -1;
@@ -753,12 +751,6 @@ namespace datatools {
     }
 
     properties::config pcfg(pcfg_options);
-    if (_header_footer_) {
-      out_ << _format::COMMENT_CHAR << _format::SPACE_CHAR
-            << "List of sections of configuration properties (datatools::multi_properties)"
-            << std::endl;
-      out_ << std::endl;
-    }
 
     if (has_topic() && _requested_topic_) {
       out_ << "#@topic" << _format::SPACE_CHAR << get_topic() << std::endl;
@@ -798,10 +790,6 @@ namespace datatools {
       out_ << std::endl;
     }
 
-    if (_header_footer_) {
-      out_ << _format::COMMENT_CHAR << _format::SPACE_CHAR << "End of list of sections of configuration properties (datatools::multi_properties)"
-            << std::endl;
-    }
     return;
   }
 
