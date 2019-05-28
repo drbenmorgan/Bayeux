@@ -2468,9 +2468,6 @@ namespace datatools {
       outs << popts.indent << popts.title << std::endl;
     }
     bool list_props = true;
-    // if (options_.get<bool>("short")) {
-    //   list_props = false;
-    // }
 
     if (!_description_.empty()) {
       outs << popts.indent << tag
@@ -2511,24 +2508,25 @@ namespace datatools {
     }
     outs << std::endl;
     if (list_props && _props_.size()) {
-      for (auto i = _props_.begin();
-           i != _props_.end();
-           ++i) {
-        const std::string & a_key = i->first;
-        const properties::data & a_data = i->second;
+
+      auto i = _props_.begin();
+      auto end = _props_.end();
+      auto last = std::prev(end);
+
+      for (; i != end; ++i) {
         outs << popts.indent << inherit_skip_tag(popts.inherit);
         std::ostringstream indent_oss;
         indent_oss << popts.indent;
         indent_oss << inherit_skip_tag(popts.inherit);
-        auto j = i;
-        j++;
-        if (j == _props_.end()) {
+        if (i == last) {
           outs << i_tree_dumpable::inherit_tag(popts.inherit);
           indent_oss << i_tree_dumpable::inherit_skip_tag(popts.inherit);
         } else {
           outs << i_tree_dumpable::tag;
           indent_oss << i_tree_dumpable::skip_tag;
         }
+        const std::string & a_key = i->first;
+        const properties::data & a_data = i->second;
         outs << "Name : " << "'" << a_key << "'" << std::endl;
         a_data.tree_dump(outs, "", indent_oss.str());
       }
@@ -2582,23 +2580,23 @@ namespace datatools {
       outs << indent << i_tree_dumpable::inherit_tag(inherit_)
            << "<no property>" << std::endl;
     } else {
-      for (auto i = _props_.begin();
-           i != _props_.end();
-           ++i) {
-        const std::string & a_key = i->first;
-        const properties::data& a_data = i->second;
+      auto i = _props_.begin();
+      auto end = _props_.end();
+      auto last = std::prev(end);
+
+      for (; i != end; ++i) {
         outs << indent;
         std::ostringstream indent_oss;
         indent_oss << indent;
-        auto j = i;
-        j++;
-        if (j == _props_.end()) {
+        if (i == last) {
           outs << i_tree_dumpable::inherit_tag(inherit_);
           indent_oss << i_tree_dumpable::inherit_skip_tag(inherit_);
         } else {
           outs << i_tree_dumpable::tag;
           indent_oss << i_tree_dumpable::skip_tag;
         }
+        const std::string & a_key = i->first;
+        const properties::data& a_data = i->second;
         outs << "Name : " << "'" << a_key << "'" << std::endl;
         a_data.tree_dump(outs, "", indent_oss.str());
       }
@@ -2620,25 +2618,6 @@ namespace datatools {
     writer.write(filename_, *this);
     return;
   }
-
-  /*
-    void properties::write_configuration(const std::string & filename,
-    bool a_use_smart_modulo,
-    bool a_write_public_only) const
-    {
-    DT_LOG_WARNING(datatools::logger::PRIO_ALWAYS, "Deprecated method!");
-    uint32_t writer_opts = 0;
-    if (a_use_smart_modulo) {
-    writer_opts |= config::SMART_MODULO;
-    }
-    if (a_write_public_only)  {
-    writer_opts |= config::SKIP_PRIVATE;
-    }
-    config writer(writer_opts);
-    writer.write(filename, *this);
-    return;
-    }
-  */
 
   void properties::read_configuration(const std::string & filename_, uint32_t options_)
   {
