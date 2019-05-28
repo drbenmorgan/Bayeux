@@ -122,7 +122,6 @@ namespace datatools {
         REQUESTED_TOPIC       = bit_mask::bit08, ///< Requested topic (read/write)
         RESOLVE_PATH          = bit_mask::bit09, ///< Resolve path for input filename (read/write)
         START_WITHOUT_LABELS  = bit_mask::bit10, ///< Start without key/meta labels and let the reader set them
-        WITHOUT_DECORATION    = bit_mask::bit11, ///< Do not use decoration
         FORBID_INCLUDE        = bit_mask::bit12  ///< Do not allow file inclusion
       };
 
@@ -194,7 +193,6 @@ namespace datatools {
       std::string _topic_;            ///< Topic to be validated
       bool _resolve_path_;            ///< Explicitely resolve path for input/output filenames (read/write)
       bool _start_without_labels_;    ///< Start without labels (read)
-      bool _without_decoration_;      ///< Flag to disable decoration (write)
       bool _forbid_include_ = false;  ///< Flag to forbid file inclusion (read)
 
       // Working parsing data:

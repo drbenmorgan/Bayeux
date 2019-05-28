@@ -594,9 +594,6 @@ namespace datatools {
     if (options_ & START_WITHOUT_LABELS) {
       _start_without_labels_ = true;
     }
-    if (options_ & WITHOUT_DECORATION) {
-      _without_decoration_ = true;
-    }
     if (options_ & FORBID_INCLUDE) {
       _forbid_include_ = true;
     }
@@ -628,7 +625,6 @@ namespace datatools {
     _resolve_path_ = false;
     _current_line_number_ = -1;
     _start_without_labels_ = false;
-    _without_decoration_ = false;
     _forbid_include_ = false;
     return;
   }
@@ -756,11 +752,6 @@ namespace datatools {
       pcfg_options |= properties::config::SKIP_PRIVATE;
     }
 
-    if (!_without_decoration_) {
-      out_ << "# -*- mode: conf-unix; -*-" << std::endl;
-      out_ << std::endl;
-    }
-
     properties::config pcfg(pcfg_options);
     if (_header_footer_) {
       out_ << _format::COMMENT_CHAR << _format::SPACE_CHAR
@@ -801,10 +792,6 @@ namespace datatools {
       }
       entry_head_oss << _format::CLOSE_CHAR;
 
-      if (!_without_decoration_) {
-        std::size_t len = entry_head_oss.str().length();
-        out_ << std::setfill('#') << std::setw(len) << "" << std::endl;
-      }
       out_ << entry_head_oss.str() << std::endl << std::endl;
 
       pcfg.write(out_, pentry->get_properties());
