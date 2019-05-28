@@ -3811,7 +3811,7 @@ namespace datatools {
                                         << prop_key
                                         << "' at line '"
                                         << line << "' !");
-              DT_PROP_CFG_READ_THROW_IF(array_override_index < 0 or array_override_index >= props_.key_size(prop_key),
+              DT_PROP_CFG_READ_THROW_IF(array_override_index < 0 or static_cast<size_t>(array_override_index) >= props_.key_size(prop_key),
                                         std::logic_error,
                                         _current_filename_,
                                         _section_name_,

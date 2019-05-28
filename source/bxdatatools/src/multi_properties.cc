@@ -207,20 +207,18 @@ namespace datatools {
     return;
   }
 
-  void multi_properties::_copy_impl_(const multi_properties & source_)
+  void multi_properties::_init_(const std::string & key_label_,
+                                const std::string & meta_label_,
+                                const std::string & description_)
   {
-    this->_description_ = source_._description_;
-    this->_key_label_   = source_._key_label_;
-    this->_meta_label_  = source_._meta_label_;
-    this->_entries_     = source_._entries_;
-
-    for (const auto& entry : source_._ordered_entries_) {
-      auto found = this->_entries_.find(entry->get_key());
-      this->_ordered_entries_.push_back(&found->second);
-    }
-
+    if (_key_label_.empty()) _key_label_ = defaults::key_label();
+    if (_meta_label_.empty()) _meta_label_ = defaults::meta_label();
+    if (!key_label_.empty()) this->set_key_label(key_label_);
+    this->set_meta_label(meta_label_);
+    this->set_description(description_);
     return;
   }
+
 
   multi_properties::multi_properties(const multi_properties & source_)
   {
@@ -235,6 +233,21 @@ namespace datatools {
       _copy_impl_(source_);
     }
     return *this;
+  }
+
+  void multi_properties::_copy_impl_(const multi_properties & source_)
+  {
+    this->_description_ = source_._description_;
+    this->_key_label_   = source_._key_label_;
+    this->_meta_label_  = source_._meta_label_;
+    this->_entries_     = source_._entries_;
+
+    for (const auto& entry : source_._ordered_entries_) {
+      auto found = this->_entries_.find(entry->get_key());
+      this->_ordered_entries_.push_back(&found->second);
+    }
+
+    return;
   }
 
   bool multi_properties::has_description() const
@@ -258,18 +271,6 @@ namespace datatools {
     return ! _key_label_.empty();
   }
 
-  void multi_properties::set_key_label(const std::string & key_label_)
-  {
-    DT_THROW_IF (key_label_.empty(),
-                 std::logic_error,
-                 "Empty key is not allowed !");
-    DT_THROW_IF (this->size(),
-                 std::logic_error,
-                 "Changing key label from '" << _key_label_ << "' to '" << key_label_ << "' is not allowed in multi-properties '" << _description_ << "'!");
-    _key_label_ = key_label_;
-    return;
-  }
-
   const std::string & multi_properties::get_key_label() const
   {
     return _key_label_;
@@ -284,9 +285,35 @@ namespace datatools {
     return;
   }
 
+  void multi_properties::set_key_label(const std::string & key_label_)
+  {
+    DT_THROW_IF (key_label_.empty(),
+                 std::logic_error,
+                 "Empty key is not allowed !");
+    DT_THROW_IF (this->size(),
+                 std::logic_error,
+                 "Changing key label from '" << _key_label_ << "' to '" << key_label_ << "' is not allowed in multi-properties '" << _description_ << "'!");
+    _key_label_ = key_label_;
+    return;
+  }
+
   bool multi_properties::has_meta_label() const
   {
     return ! _meta_label_.empty();
+  }
+
+  const std::string & multi_properties::get_meta_label() const
+  {
+    return _meta_label_;
+  }
+
+  void multi_properties::clear_meta_label()
+  {
+    DT_THROW_IF(this->size(),
+                std::logic_error,
+                "Reseting meta label '" << _meta_label_ << "' is not allowed in non-empty multi-properties '" << _description_ << "'!");
+    _meta_label_.clear();
+    return;
   }
 
   void multi_properties::set_meta_label(const std::string & meta_label_)
@@ -298,26 +325,12 @@ namespace datatools {
     return;
   }
 
-  const std::string & multi_properties::get_meta_label() const
-  {
-    return _meta_label_;
-  }
-
   size_t multi_properties::size() const
   {
     DT_THROW_IF (_ordered_entries_.size() != _entries_.size(),
                  std::runtime_error,
                  "Internal containers are broken !");
     return _entries_.size();
-  }
-
-  void multi_properties::clear_meta_label()
-  {
-    DT_THROW_IF(this->size(),
-                std::logic_error,
-                "Reseting meta label '" << _meta_label_ << "' is not allowed in non-empty multi-properties '" << _description_ << "'!");
-    _meta_label_.clear();
-    return;
   }
 
   bool multi_properties::empty() const
@@ -338,29 +351,6 @@ namespace datatools {
   {
     _ordered_entries_.clear();
     _entries_.clear();
-    return;
-  }
-
-  const multi_properties::entries_col_type & multi_properties::entries() const
-  {
-    return _entries_;
-  }
-
-  const multi_properties::entries_ordered_col_type &
-  multi_properties::ordered_entries() const
-  {
-    return _ordered_entries_;
-  }
-
-  void multi_properties::_init_(const std::string & key_label_,
-                                const std::string & meta_label_,
-                                const std::string & description_)
-  {
-    if (_key_label_.empty()) _key_label_ = defaults::key_label();
-    if (_meta_label_.empty()) _meta_label_ = defaults::meta_label();
-    if (!key_label_.empty()) this->set_key_label(key_label_);
-    this->set_meta_label(meta_label_);
-    this->set_description(description_);
     return;
   }
 
@@ -389,17 +379,6 @@ namespace datatools {
     return iter->first;
   }
 
-  const std::string & multi_properties::ordered_key (size_t key_index_) const
-  {
-    DT_THROW_IF(key_index_ >= size(),
-                std::out_of_range,
-                "Out of range ordered key index '"
-                << key_index_ << "' !");
-    auto iter = _ordered_entries_.begin();
-    std::advance(iter, key_index_);
-    return (*iter)->get_key ();
-  }
-
   void multi_properties::keys(std::vector<std::string>&k) const
   {
     for (const auto & e : _entries_) {
@@ -413,6 +392,17 @@ namespace datatools {
     std::vector<std::string> k;
     keys(k);
     return k;
+  }
+
+  const std::string & multi_properties::ordered_key (size_t key_index_) const
+  {
+    DT_THROW_IF(key_index_ >= size(),
+                std::out_of_range,
+                "Out of range ordered key index '"
+                << key_index_ << "' !");
+    auto iter = _ordered_entries_.begin();
+    std::advance(iter, key_index_);
+    return (*iter)->get_key ();
   }
 
   std::vector<std::string> multi_properties::ordered_keys() const
@@ -430,10 +420,22 @@ namespace datatools {
     return;
   }
 
+
   bool multi_properties::has_section(const std::string & key_) const
   {
     return this->has_key(key_);
   }
+
+  const properties& multi_properties::get_section(const std::string & key_) const
+  {
+    return this->get(key_).get_properties();
+  }
+
+  properties& multi_properties::grab_section(const std::string & key_)
+  {
+    return this->grab(key_).grab_properties();
+  }
+
 
   const multi_properties::entry& multi_properties::get(const std::string & key_) const
   {
@@ -453,55 +455,16 @@ namespace datatools {
     return found->second;
   }
 
-  const properties& multi_properties::get_section_const(const std::string & key_) const
+  const multi_properties::entries_col_type & multi_properties::entries() const
   {
-    return get_section(key_);
+    return _entries_;
   }
 
-  const properties& multi_properties::get_section(const std::string & key_) const
+  const multi_properties::entries_ordered_col_type &
+  multi_properties::ordered_entries() const
   {
-    return this->get(key_).get_properties();
+    return _ordered_entries_;
   }
-
-  properties& multi_properties::grab_section(const std::string & key_)
-  {
-    return this->grab(key_).grab_properties();
-  }
-
-
-  void multi_properties::remove(const std::string & key_)
-  {
-    DT_THROW_IF (! this->has_key(key_),
-                 std::logic_error,
-                 "Key '" << key_ << "' is not used !");
-    _ordered_entries_.remove_if([&key_](entry* e) {return (e->get_key() == key_);});
-    _entries_.erase(key_);
-    return;
-  }
-
-  properties & multi_properties::add_impl2(const std::string & key_,
-                                           const std::string & meta_)
-  {
-    DT_THROW_IF (this->has_key(key_),
-                 std::logic_error,
-                 "Key '" << key_ << "' is already used !");
-    /*
-    // Fix ticket #83:
-    if (! _meta_label_.empty() && meta_.empty()) {
-    DT_LOG_WARNING(datatools::logger::PRIO_WARNING,
-    "Key '" << key_ << "' has a an empty '" << _meta_label_ << "' !");
-    }
-    */
-    // 2019-09-12, FM: Warn!
-    if (_meta_label_.empty() && !meta_.empty()) {
-      DT_LOG_WARNING(datatools::logger::PRIO_WARNING,
-                     "Key '" << key_ << "' will ignore meta '" << meta_ << "' !");
-    }
-    _entries_[key_] = entry(key_, meta_);
-    _ordered_entries_.push_back(&_entries_[key_]);
-    return _entries_[key_].grab_properties ();
-  }
-
 
   void multi_properties::add(const std::string & key_,
                              const std::string & meta_)
@@ -516,7 +479,6 @@ namespace datatools {
     return;
   }
 
-
   void multi_properties::add(const std::string & key_,
                              const std::string & meta_,
                              const properties & props_)
@@ -525,11 +487,38 @@ namespace datatools {
     return;
   }
 
-
   properties& multi_properties::add_section(const std::string & key_,
                                             const std::string & meta_)
   {
     return add_impl2(key_, meta_);
+  }
+
+  properties& multi_properties::add_impl2(const std::string & key_,
+                                          const std::string & meta_)
+  {
+    DT_THROW_IF (this->has_key(key_),
+                 std::logic_error,
+                 "Key '" << key_ << "' is already used !");
+    // 2017-03-17, FM: I don't know what to do with the following lines!
+    // So wrap it only in debug mode...
+    if (_meta_label_.empty() && !meta_.empty()) {
+        DT_LOG_DEBUG(datatools::logger::PRIO_WARNING,
+                      "Key '" << key_ << "' will ignore meta '" << meta_ << "' !");
+    }
+
+    _entries_[key_] = entry(key_, meta_);
+    _ordered_entries_.push_back(&_entries_[key_]);
+    return _entries_[key_].grab_properties ();
+  }
+
+  void multi_properties::remove(const std::string & key_)
+  {
+    DT_THROW_IF (! this->has_key(key_),
+                 std::logic_error,
+                 "Key '" << key_ << "' is not used !");
+    _ordered_entries_.remove_if([&key_](entry* e) {return (e->get_key() == key_);});
+    _entries_.erase(key_);
+    return;
   }
 
   void multi_properties::write(const std::string & filename_,
@@ -580,7 +569,7 @@ namespace datatools {
     return;
   }
 
-
+  //----------------------------------------------------------------------
   // - Config inner class implementation
   multi_properties::config::config(uint32_t options_, const std::string & topic_)
   {

@@ -104,14 +104,114 @@ namespace datatools {
     , public datatools::i_cloneable
   {
   public:
+     /// \brief Reader/writer class for multi_properties objects
+    class config
+    {
+    public:
 
-    /// \brief Default values
+      /// \brief Flags to modify the behaviour and formatting of a config object
+      enum options_flag {
+        SKIP_PRIVATE_SECTIONS = bit_mask::bit00, ///< Skip private sections bit
+        FORBID_VARIANTS       = bit_mask::bit01, ///< Forbid variant block directives bit
+        LOG_MUTE              = bit_mask::bit02, ///< Mute mode activation bit
+        LOG_DEBUG             = bit_mask::bit03, ///< Debug mode activation bit
+        LOG_TRACE             = bit_mask::bit04, ///< Trace mode activation bit
+        SKIP_PRIVATE_PROPS    = bit_mask::bit05, ///< Skip private properties in sections bit
+        HEADER_FOOTER         = bit_mask::bit06, ///< Use header/footer (write)
+        DONT_CLEAR            = bit_mask::bit07, ///< Don't clear before parsing bit (read)
+        REQUESTED_TOPIC       = bit_mask::bit08, ///< Requested topic (read/write)
+        RESOLVE_PATH          = bit_mask::bit09, ///< Resolve path for input filename (read/write)
+        START_WITHOUT_LABELS  = bit_mask::bit10, ///< Start without key/meta labels and let the reader set them
+        WITHOUT_DECORATION    = bit_mask::bit11, ///< Do not use decoration
+        FORBID_INCLUDE        = bit_mask::bit12  ///< Do not allow file inclusion
+      };
+
+      /// Default constructor
+      config(uint32_t options_ = 0, const std::string & topic_ = "");
+
+      /// Return the logging priority threshold
+      datatools::logger::priority get_logging() const;
+
+      /// Set the logging priority threshold
+      void set_logging(datatools::logger::priority);
+
+      /// Reset the reader/writer
+      void reset();
+
+      /// Read from an input file
+      void read(const std::string & filename, multi_properties & target_);
+
+      /// Read from an input stream
+      void read(std::istream & in_, multi_properties & target_);
+
+      /// Write to an output stream
+      void write(std::ostream & out_, const multi_properties & source_);
+
+      /// Write to an output file
+      void write(const std::string & filename_, const multi_properties & source_);
+
+      /// Check if topic is set
+      bool has_topic() const;
+
+      /// Set the topic that should be matched
+      void set_topic(const std::string & topic_);
+
+      /// Return the topic
+      const std::string & get_topic() const;
+
+      /// Return the embedded file inclusion solver
+      const file_include & get_fi() const;
+
+      /// Return the mutable embedded file inclusion solver
+      file_include & grab_fi();
+
+      /// Set the embedded file inclusion solver
+      void set_fi(const file_include &);
+
+    protected:
+
+      /// Default initialization
+      void _init_defaults();
+
+      /// Read from an input stream
+      void _read(std::istream & in_, multi_properties & target_);
+
+      /// Write to an output stream
+      void _write(std::ostream & out_, const multi_properties & target_);
+
+      /// Store the current filename
+      void _set_current_filename(const std::string & filename_);
+
+    private:
+
+      // Configuration:
+      datatools::logger::priority _logging_; ///< Logging priority threshold (read/write)
+      bool _skip_private_sections_;   ///< Flag to skip private sections (read/write)
+      bool _skip_private_properties_; ///< Flag to skip private properties in sections (read/write)
+      bool _forbid_variants_;         ///< Flag to forbid variant directives (read)
+      bool _header_footer_;           ///< Flag to print header/footer (write)
+      bool _requested_topic_;         ///< Flag to activate topic matching (read/write)
+      std::string _topic_;            ///< Topic to be validated
+      bool _resolve_path_;            ///< Explicitely resolve path for input/output filenames (read/write)
+      bool _start_without_labels_;    ///< Start without labels (read)
+      bool _without_decoration_;      ///< Flag to disable decoration (write)
+      bool _forbid_include_ = false;  ///< Flag to forbid file inclusion (read)
+
+      // Working parsing data:
+      std::string _current_filename_;    ///< Current filename
+      int         _current_line_number_; ///< Current line number
+      file_include _fi_;                 ///< File inclusion solver
+
+    }; //----- end of class config
+
+    /// \brief Default key/meta values
     struct defaults {
       /// Default label for primary keys
       static const std::string & key_label();
       /// Default label for meta information text
       static const std::string & meta_label();
     };
+
 
     //! \brief Inner class for section entry handle internal data stored within the dictionary of the multi_properties class.
     class entry
@@ -123,26 +223,13 @@ namespace datatools {
       entry(const std::string & key_ = "",
             const std::string & meta_ = "");
 
-      /// Destructor
-      ~entry() override = default;
-
-      /// Copy constructor
-      entry(const entry &) = default;
-
-      /// Copy assignment
-      entry & operator=(const entry &) = default;
-
-      /// Move constructor
-      entry(entry &&) = default;
-
-      /// Move assignment
-      entry & operator=(entry &&) = default;
+      virtual ~entry() = default;
 
       /// Return a const reference to the collection of properties
-      const properties & get_properties() const;
+      const properties& get_properties() const;
 
       /// Return a mutable reference to the collection of properties
-      properties & grab_properties();
+      properties& grab_properties();
 
       /// Return the primary key
       const std::string & get_key() const;
@@ -180,7 +267,6 @@ namespace datatools {
     }; // multi_properties::entry
 
 
-
   public:
     /// Dictionary of section
     typedef std::map<std::string, entry> entries_col_type;
@@ -216,11 +302,11 @@ namespace datatools {
     // Move assignment
     multi_properties & operator=(multi_properties &&) = default;
 
-    /// Set the description
-    void set_description(const std::string & description_);
-
     /// Check if a description is available
     bool has_description() const;
+
+    /// Set the description
+    void set_description(const std::string & description_);
 
     /// Get the description
     const std::string & get_description() const;
@@ -261,18 +347,6 @@ namespace datatools {
     /// Clear the dictionary of sections
     void clear() override;
 
-    /// Return the const reference to the collection of entries
-    const entries_col_type & entries() const;
-
-    /// Return the const reference to the ordered collection of entries
-    const entries_ordered_col_type & ordered_entries() const;
-
-    /// Return a const reference to the stored entry
-    const entry & get(const std::string & key_) const;
-
-    /// Return a mutable reference to the stored entry
-    entry & grab(const std::string & key_);
-
     /// Check if a section with a given key exists
     bool has_key(const std::string & key_) const;
 
@@ -282,14 +356,14 @@ namespace datatools {
     //! Returns the ith key
     const std::string & key(size_t) const;
 
-    //! Returns the ith ordered key
-    const std::string & ordered_key(size_t) const;
-
     /// Return an array of keys
     std::vector<std::string> keys() const;
 
     /// Build an array of keys
     void keys(std::vector<std::string> & keys_) const;
+
+    //! Returns the ith ordered key
+    const std::string & ordered_key(size_t) const;
 
     /// Return an array of orderered keys
     std::vector<std::string> ordered_keys() const;
@@ -303,11 +377,20 @@ namespace datatools {
     /// Return the const reference to the properties store in a section
     const properties & get_section(const std::string & key_) const;
 
-    /// Return the const reference to the properties store in a section
-    const properties & get_section_const(const std::string & key_) const;
-
     /// Return the mutable reference to the properties store in a section
     properties & grab_section(const std::string & key_);
+
+    /// Return a const reference to the stored entry
+    const entry& get(const std::string & key_) const;
+
+    /// Return a mutable reference to the stored entry
+    entry& grab(const std::string & key_);
+
+    /// Return the const reference to the collection of entries
+    const entries_col_type& entries() const;
+
+    /// Return the const reference to the ordered collection of entries
+    const entries_ordered_col_type& ordered_entries() const;
 
     /// Add a new section with primary key, meta information text and a collection of properties
     void add(const std::string & key_,
@@ -478,107 +561,6 @@ namespace datatools {
                            const std::string & title_  = "",
                            const std::string & indent_ = "",
                            bool inherit_               = false) const override;
-
-
-    /// \brief Reader/writer class for multi_properties objects
-    class config
-    {
-    public:
-
-      /// \brief Flags to modify the behaviour and formatting of a config object
-      enum options_flag {
-        SKIP_PRIVATE_SECTIONS = bit_mask::bit00, ///< Skip private sections bit
-        FORBID_VARIANTS       = bit_mask::bit01, ///< Forbid variant block directives bit
-        LOG_MUTE              = bit_mask::bit02, ///< Mute mode activation bit
-        LOG_DEBUG             = bit_mask::bit03, ///< Debug mode activation bit
-        LOG_TRACE             = bit_mask::bit04, ///< Trace mode activation bit
-        SKIP_PRIVATE_PROPS    = bit_mask::bit05, ///< Skip private properties in sections bit
-        HEADER_FOOTER         = bit_mask::bit06, ///< Use header/footer (write)
-        DONT_CLEAR            = bit_mask::bit07, ///< Don't clear before parsing bit (read)
-        REQUESTED_TOPIC       = bit_mask::bit08, ///< Requested topic (read/write)
-        RESOLVE_PATH          = bit_mask::bit09, ///< Resolve path for input filename (read/write)
-        START_WITHOUT_LABELS  = bit_mask::bit10, ///< Start without key/meta labels and let the reader set them
-        WITHOUT_DECORATION    = bit_mask::bit11, ///< Do not use decoration
-        FORBID_INCLUDE        = bit_mask::bit12  ///< Do not allow file inclusion
-      };
-
-      /// Default constructor
-      config(uint32_t options_ = 0, const std::string & topic_ = "");
-
-      /// Return the logging priority threshold
-      datatools::logger::priority get_logging() const;
-
-      /// Set the logging priority threshold
-      void set_logging(datatools::logger::priority);
-
-      /// Reset the reader/writer
-      void reset();
-
-      /// Read from an input file
-      void read(const std::string & filename, multi_properties & target_);
-
-      /// Read from an input stream
-      void read(std::istream & in_, multi_properties & target_);
-
-      /// Write to an output stream
-      void write(std::ostream & out_, const multi_properties & source_);
-
-      /// Write to an output file
-      void write(const std::string & filename_, const multi_properties & source_);
-
-      /// Check if topic is set
-      bool has_topic() const;
-
-      /// Set the topic that should be matched
-      void set_topic(const std::string & topic_);
-
-      /// Return the topic
-      const std::string & get_topic() const;
-
-      /// Return the embedded file inclusion solver
-      const file_include & get_fi() const;
-
-      /// Return the mutable embedded file inclusion solver
-      file_include & grab_fi();
-
-      /// Set the embedded file inclusion solver
-      void set_fi(const file_include &);
-
-    protected:
-
-      /// Default initialization
-      void _init_defaults();
-
-      /// Read from an input stream
-      void _read(std::istream & in_, multi_properties & target_);
-
-      /// Write to an output stream
-      void _write(std::ostream & out_, const multi_properties & target_);
-
-      /// Store the current filename
-      void _set_current_filename(const std::string & filename_);
-
-    private:
-
-      // Configuration:
-      datatools::logger::priority _logging_; ///< Logging priority threshold (read/write)
-      bool _skip_private_sections_;   ///< Flag to skip private sections (read/write)
-      bool _skip_private_properties_; ///< Flag to skip private properties in sections (read/write)
-      bool _forbid_variants_;         ///< Flag to forbid variant directives (read)
-      bool _header_footer_;           ///< Flag to print header/footer (write)
-      bool _requested_topic_;         ///< Flag to activate topic matching (read/write)
-      std::string _topic_;            ///< Topic to be validated
-      bool _resolve_path_;            ///< Explicitely resolve path for input/output filenames (read/write)
-      bool _start_without_labels_;    ///< Start without labels (read)
-      bool _without_decoration_;      ///< Flag to disable decoration (write)
-      bool _forbid_include_ = false;  ///< Flag to forbid file inclusion (read)
-
-      // Working parsing data:
-      std::string _current_filename_;    ///< Current filename
-      int         _current_line_number_; ///< Current line number
-      file_include _fi_;                 ///< File inclusion solver
-
-    }; //----- end of class config
 
   private:
     /// Private initialization
