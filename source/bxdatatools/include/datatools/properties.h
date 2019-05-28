@@ -162,7 +162,7 @@ namespace datatools {
 
       static const char STRING_FORBIDDEN_CHAR = '"';
 
-      static const size_t SCALAR_DEF  = 0;
+      static const size_t SCALAR_DEF  = std::numeric_limits<size_t>::max();
       static const size_t SCALAR_SIZE = 1;
 
       /// \brief Provides static method for default values for each supported type
