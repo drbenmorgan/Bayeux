@@ -138,35 +138,6 @@ namespace datatools {
   //----------------------------------------------------------------------
   // properties::data class implementation
   //
-  const int properties::data::ERROR_SUCCESS;
-  const int properties::data::ERROR_FAILURE;
-  const int properties::data::ERROR_BADTYPE;
-  const int properties::data::ERROR_RANGE;
-  const int properties::data::ERROR_LOCK;
-
-  const uint8_t properties::data::MASK_TYPE;
-  const uint8_t properties::data::MASK_UNIT_SYMBOL;
-  const uint8_t properties::data::MASK_EXPLICIT_PATH;
-  const uint8_t properties::data::MASK_EXPLICIT_UNIT;
-  const uint8_t properties::data::MASK_LOCK;
-  const uint8_t properties::data::MASK_VECTOR;
-
-  const uint8_t properties::data::TYPE_NONE;
-  const uint8_t properties::data::TYPE_BOOLEAN;
-  const uint8_t properties::data::TYPE_INTEGER;
-  const uint8_t properties::data::TYPE_REAL;
-  const uint8_t properties::data::TYPE_STRING;
-
-  const char properties::data::TYPE_BOOLEAN_SYMBOL;
-  const char properties::data::TYPE_INTEGER_SYMBOL;
-  const char properties::data::TYPE_REAL_SYMBOL;
-  const char properties::data::TYPE_STRING_SYMBOL;
-
-  const char properties::data::STRING_FORBIDDEN_CHAR;
-
-  const size_t properties::data::SCALAR_DEF;
-  const size_t properties::data::SCALAR_SIZE;
-
   bool properties::data::defaults::boolean_value()
   {
     return false;
