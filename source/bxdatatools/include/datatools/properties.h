@@ -261,6 +261,21 @@ namespace datatools {
       /// Check if the data is vector (>=0 stored values in an array)
       bool is_vector() const;
 
+      /// Generic type check
+      template <typename T>
+      bool is_type() const;
+
+      // ----- specializations
+      template <>
+      bool is_type<bool>() const {return is_boolean();}
+      template <>
+      bool is_type<int>() const {return is_integer();}
+      template <>
+      bool is_type<double>() const {return is_real();}
+      template <>
+      bool is_type<std::string>() const {return is_string();}
+
+
       /// Check is description is set
       bool has_description() const;
 
@@ -298,6 +313,23 @@ namespace datatools {
 
       /// Assign N string values
       int string(size_t size_ = SCALAR_DEF);
+
+      /// Generic assignment and specializations
+      template <typename T>
+      int assign(size_t size_ = SCALAR_DEF);
+
+      template <>
+      int assign<bool>(size_t size_) {return boolean(size_);}
+
+      template <>
+      int assign<int>(size_t size_) {return integer(size_);}
+
+      template <>
+      int assign<double>(size_t size_) {return real(size_);}
+
+      template <>
+      int assign<std::string>(size_t size_) {return string(size_);}
+
 
       /// Check if the data is locked (cannot be modified)
       bool is_locked() const;
@@ -1289,27 +1321,98 @@ namespace datatools {
     //! Update a string flag with a given key/name and value
     void update_string(const std::string & key_, const std::string & value);
 
-    //! Check if a boolean value with a given key/name exists with value 'true'
-    bool has_flag(const std::string & key_) const;
-
     //! Fetch the boolean value stored with a given key/name and index
     void fetch(const std::string & key_, bool & value_, size_t index_ = 0) const;
+
+   //! Fetch the boolean value stored with a given key/name and index
+    bool fetch_boolean(const std::string &, size_t index_ = 0) const;
+
+    //! Fetch the boolean scalar value stored with a given key/name
+    bool fetch_boolean_scalar(const std::string & name_) const;
+
+    //! Fetch the boolean vector value stored with a given key/name and index
+    bool fetch_boolean_vector(const std::string & name_, size_t index_) const;
+
+    //! Check if a boolean value with a given key/name exists with value 'true'
+    bool has_flag(const std::string & key_) const;
 
     //! Fetch the integer value stored with a given key/name and index
     void fetch(const std::string & key_, int & value_, size_t index_ = 0) const;
 
+     //! Fetch the integer value stored with a given key/name and index
+    int fetch_integer(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the integer scalar value stored with a given key/name
+    int fetch_integer_scalar(const std::string & name_) const;
+
+    //! Fetch the integer vector value stored with a given key/name and index
+    int fetch_integer_vector(const std::string & name_ , size_t index_) const;
+
+    //! Fetch the positive integer value stored with a given key/name and index
+    unsigned int fetch_positive_integer(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the strict positive integer value stored with a given key/name and index
+    unsigned int fetch_strict_positive_integer(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the ranged integer value stored with a given key/name and index
+    int fetch_range_integer(const std::string & name_, int min_, int max_, size_t index_ = 0) const;
+
+
     //! Fetch the real value stored with a given key/name and index
     void fetch(const std::string & key_, double & value_, size_t index_ = 0) const;
+
+    //! Fetch the real value stored with a given key/name and index
+    double fetch_real(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the real scalar value stored with a given key/name
+    double fetch_real_scalar(const std::string & name_) const;
+
+    //! Fetch the real vector value stored with a given key/name and index
+    double fetch_real_vector(const std::string & name_, size_t index_) const;
+
+    //! Fetch the dimensionless real value stored with a given key/name and index
+    double fetch_dimensionless_real(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the physical quantity (with its explicit unit) value stored with a given key/name and index
+    double fetch_real_with_explicit_unit(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the physical quantity (with its explicit dimension) value stored with a given key/name and index
+    double fetch_real_with_explicit_dimension(const std::string & name_, const std::string & dimension_, size_t index_ = 0) const;
+
 
     //! Fetch the string value stored with a given key/name and index
     void fetch(const std::string & key_, std::string & value_,
                size_t index = 0) const;
+
+    //! Fetch the string value stored with a given key/name and index
+    std::string fetch_string(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch the string scalar value stored with a given key/name
+    std::string fetch_string_scalar(const std::string & name_) const;
+
+    //! Fetch the string vector value stored with a given key/name and index
+    std::string fetch_string_vector(const std::string & name_, size_t index_) const;
+
+    //! Fetch a file path from a string value stored with a given key/name and index
+    std::string fetch_path(const std::string & name_, size_t index_ = 0) const;
+
+    //! Fetch a file path from a string scalar value stored with a given key/name
+    std::string fetch_path_scalar(const std::string & name_) const;
+
+    //! Fetch a file path from a string vector value stored with a given key/name and index
+    std::string fetch_path_vector(const std::string & name_, size_t index_) const;
 
     //! Fetch the boolean vector value stored with a given key/name
     void fetch(const std::string & key_, data::vbool & values_) const;
 
     //! Fetch the integer vector value stored with a given key/name
     void fetch(const std::string & key_, data::vint & values_) const;
+
+    //! Fetch a set of integer values from the vector value stored with a given key/name
+    void fetch(const std::string & key_, std::set<int> & values, bool allow_duplication_ = false) const;
+
+    //! Fetch a set of unsigned integer values from the vector value stored with a given key/name
+    void fetch_positive(const std::string & key_, std::set<unsigned int> & values_, bool allow_duplication_ = false) const;
 
     //! Fetch the real vector value stored with a given key/name
     void fetch(const std::string & key_, data::vdouble & values_) const;
@@ -1326,77 +1429,8 @@ namespace datatools {
     //! Fetch a list of unique string values from the vector value stored with a given key/name
     void fetch_unique_ordered(const std::string & key_, std::vector<std::string> & values_) const;
 
-    //! Fetch a set of integer values from the vector value stored with a given key/name
-    void fetch(const std::string & key_, std::set<int> & values, bool allow_duplication_ = false) const;
-
-    //! Fetch a set of unsigned integer values from the vector value stored with a given key/name
-    void fetch_positive(const std::string & key_, std::set<unsigned int> & values_, bool allow_duplication_ = false) const;
-
-    //! Fetch the boolean value stored with a given key/name and index
-    bool fetch_boolean(const std::string &, size_t index_ = 0) const;
-
-    //! Fetch the boolean scalar value stored with a given key/name
-    bool fetch_boolean_scalar(const std::string & name_) const;
-
-    //! Fetch the boolean vector value stored with a given key/name and index
-    bool fetch_boolean_vector(const std::string & name_, size_t index_) const;
-
-    //! Fetch the integer value stored with a given key/name and index
-    int fetch_integer(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the positive integer value stored with a given key/name and index
-    unsigned int fetch_positive_integer(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the strict positive integer value stored with a given key/name and index
-    unsigned int fetch_strict_positive_integer(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the ranged integer value stored with a given key/name and index
-    int fetch_range_integer(const std::string & name_, int min_, int max_, size_t index_ = 0) const;
-
-    //! Fetch the integer scalar value stored with a given key/name
-    int fetch_integer_scalar(const std::string & name_) const;
-
-    //! Fetch the integer vector value stored with a given key/name and index
-    int fetch_integer_vector(const std::string & name_ , size_t index_) const;
-
-    //! Fetch the real value stored with a given key/name and index
-    double fetch_real(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the dimensionless real value stored with a given key/name and index
-    double fetch_dimensionless_real(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the physical quantity (with its explicit unit) value stored with a given key/name and index
-    double fetch_real_with_explicit_unit(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the physical quantity (with its explicit dimension) value stored with a given key/name and index
-    double fetch_real_with_explicit_dimension(const std::string & name_, const std::string & dimension_, size_t index_ = 0) const;
-
-    //! Fetch the real scalar value stored with a given key/name
-    double fetch_real_scalar(const std::string & name_) const;
-
-    //! Fetch the real vector value stored with a given key/name and index
-    double fetch_real_vector(const std::string & name_, size_t index_) const;
-
-    //! Fetch the string value stored with a given key/name and index
-    std::string fetch_string(const std::string & name_, size_t index_ = 0) const;
-
     //! Fetch a single character value stored with a given key/name and index
     char fetch_one_character(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch the string scalar value stored with a given key/name
-    std::string fetch_string_scalar(const std::string & name_) const;
-
-    //! Fetch the string vector value stored with a given key/name and index
-    std::string fetch_string_vector(const std::string & name_, size_t index_) const;
-
-    //! Fetch a file path from a string value stored with a given key/name and index
-    std::string fetch_path(const std::string & name_, size_t index_ = 0) const;
-
-    //! Fetch a file path from a string scalar value stored with a given key/name
-    std::string fetch_path_scalar(const std::string & name_) const;
-
-    //! Fetch a file path from a string vector value stored with a given key/name and index
-    std::string fetch_path_vector(const std::string & name_, size_t index_) const;
 
     //! Basic print
     void dump(std::ostream & out_ = std::clog) const;
@@ -1467,16 +1501,31 @@ namespace datatools {
     /// Reset the internal key validator predicate
     void _clear_key_validator_();
 
+    /// Store (put) scalar value at key with optional description and lock
     template <typename T>
     void _store_scalar_impl_(const std::string& a_key, const T& value_,
                              const std::string& description_, bool a_lock);
 
+    /// Store (put) vector value at key with optional description and lock
     template <typename T>
-    void _store_vector_impl_(const std::string& a_key, const T& values,
+    void _store_vector_impl_(const std::string& a_key, const std::vector<T>& values,
                            const std::string& description, bool a_lock);
 
+    /// Change scalar value at key/index
     template <typename T>
     void _change_scalar_impl_(const std::string& key, const T& value, size_t index);
+
+    /// Change vector values at key
+    template <typename T>
+    void _change_vector_impl_(const std::string& a_key, const std::vector<T> values);
+
+       /// Fetch (get) scalar value from key, index
+    template <typename T>
+    void _fetch_scalar_impl_(const std::string& a_key, T& value, size_t index) const;
+
+    /// Fetch (get) vector value from key
+    template <typename T>
+    void _fetch_vector_impl_(const std::string& a_key, std::vector<T>& values) const;
 
    private:
     // Internal data:
@@ -1549,13 +1598,12 @@ namespace datatools {
   }
 
   template <typename T>
-  void properties::_store_vector_impl_(const std::string &a_key, const T &values,
+  void properties::_store_vector_impl_(const std::string &a_key, const std::vector<T> &values,
                                        const std::string &description, bool a_lock) {
     this->_check_nokey_(a_key);
     this->_validate_key_(a_key);
     size_t valsize = values.size();
-    data a_data(data::defaults::default_value<typename T::value_type>(),
-                valsize);
+    data a_data(data::defaults::default_value<T>(), valsize);
     a_data.set_description(description);
     if (a_lock) a_data.lock();
 
@@ -1572,7 +1620,6 @@ namespace datatools {
   {
     auto& data_ptr = this->_get_valid_data_(a_key);
     int error = data_ptr.set_value(value, index);
-
     DT_THROW_IF(error != data::ERROR_SUCCESS,
                 std::logic_error,
                 "Cannot change value for " << data_ptr.get_type_label() << " property '"
@@ -1580,6 +1627,74 @@ namespace datatools {
                 << data::get_error_message(error) << "!");
     return;
   }
+
+  template <typename T>
+  void properties::_change_vector_impl_(const std::string& a_key, const std::vector<T> values)
+  {
+    auto& data_ptr = this->_get_valid_data_(a_key);
+
+    // Some problems with logic that follows...
+    // 1. resize() will clear data, even for locked data elements, so should surely check for locking *first*?
+    // 2. Should not need the DT_THROW_IF in second for loop since everything will have been checked by this point.
+
+    DT_THROW_IF(!data_ptr.is_type<T>() || !data_ptr.is_vector(),
+                std::logic_error,
+                "Property '" << a_key << "' is not a vector of " << data_ptr.get_type_label() << " in properties described by '" << get_description() << "' !");
+
+    if (values.size() != data_ptr.get_size()) {
+      int error = data_ptr.assign<T>(values.size());
+      DT_THROW_IF(error != data::ERROR_SUCCESS,
+                  std::logic_error,
+                  "Cannot change value for vector of " << data_ptr.get_type_label() << " property '"
+                  << a_key << "': "
+                  << data::get_error_message(error) << " in properties described by '" << get_description() << "' !");
+    }
+    for (size_t i{0}; i < values.size(); ++i) {
+      int error = data_ptr.set_value(values[i], i);
+      DT_THROW_IF(error != data::ERROR_SUCCESS,
+                  std::logic_error,
+                  "Cannot change value for vector of booleans property '"
+                  << a_key << "' in properties described by '" << get_description() << "': "
+                  << data::get_error_message(error) << " !");
+    }
+    return;
+  }
+  template <typename T>
+  void properties::_fetch_scalar_impl_(const std::string& a_key, T& value, size_t index) const
+  {
+    auto& data_ptr = this->_get_valid_data_(a_key);
+    int error = data_ptr.get_value(value, index);
+    DT_THROW_IF(error != data::ERROR_SUCCESS,
+                std::logic_error,
+                "Cannot fetch " << data_ptr.get_type_label() << "value from property '"
+                << a_key << "' in properties described by '" << get_description() << "': "
+                << data::get_error_message(error) << " !");
+    return;
+  }
+
+  template <typename T>
+  void properties::_fetch_vector_impl_(const std::string& a_key, std::vector<T>& values) const
+  {
+    auto& data_ptr = this->_get_valid_data_(a_key);
+    DT_THROW_IF(!data_ptr.is_type<T>() || !data_ptr.is_vector(),
+                std::logic_error,
+                "Property '" << a_key << "' is not a vector of " << data_ptr.get_type_label() << " !");
+    values.resize(data_ptr.size(), data::defaults::default_value<T>());
+    for (size_t i{0}; i < values.size(); ++i) {
+      T val;
+      int error = data_ptr.get_value(val, i);
+      // Logically, nothing can actually fail here because we have checked type, vector and size
+      // so get_value will never throw, but we need to check the value
+      DT_THROW_IF(error != data::ERROR_SUCCESS,
+                  std::logic_error,
+                  "Cannot fetch a vector of " << data_ptr.get_type_label() << " from property '"
+                  << a_key << "': " << data::get_error_message(error) << " !");
+      values[i] = val;
+    }
+    return;
+  }
+
+
 } // end of namespace datatools
 
 // Support for serialization tag :

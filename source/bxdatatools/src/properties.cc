@@ -855,6 +855,36 @@ namespace datatools {
     return;
   }
 
+  void properties::clean(const std::string & a_key)
+  {
+    auto found = _props_.find(a_key);
+    if (found != _props_.end()) {
+      _props_.erase(found);
+    }
+    return;
+  }
+
+  void properties::erase_all()
+  {
+    _props_.clear();
+    return;
+  }
+
+  void properties::clear()
+  {
+    _props_.clear();
+    _clear_key_validator_();
+    return;
+  }
+
+  void properties::reset()
+  {
+    this->set_description("");
+    this->clear();
+    return;
+  }
+
+
   void properties::erase_all_starting_with(const std::string & prefix_)
   {
     for (const auto& k : this->keys_starting_with(prefix_)) {
@@ -973,33 +1003,6 @@ namespace datatools {
     return;
   }
 
-  void properties::erase_all()
-  {
-    _props_.clear();
-    return;
-  }
-
-  void properties::clean(const std::string & a_key)
-  {
-    auto found = _props_.find(a_key);
-    if (found != _props_.end()) {
-      _props_.erase(found);
-    }
-    return;
-  }
-
-  void properties::clear()
-  {
-    _props_.clear();
-    return;
-  }
-
-  void properties::reset()
-  {
-    this->set_description("");
-    _props_.clear();
-    return;
-  }
 
   void properties::keys_not_starting_with(std::vector<std::string>& some_keys,
                                           const std::string & prefix_) const
@@ -1075,7 +1078,7 @@ namespace datatools {
   {
     DT_THROW_IF(suffix.empty(),
                 std::logic_error,
-                "Empty key suffix argument in properties described by '" << get_description() << "' !");
+                "Empty key suffix argument !");
     for (const auto& pair : _props_) {
       if (boost::algorithm::ends_with(pair.first, suffix)) {
         prop_keys.push_back(pair.first);
@@ -1110,20 +1113,6 @@ namespace datatools {
     for(const auto& pair : _props_) {
       some_keys_.push_back(pair.first);
     }
-    return;
-  }
-
-  const properties::data &
-  properties::get(const std::string & prop_key) const
-  {
-    return this->_get_valid_data_(prop_key);
-  }
-
-  void properties::store(const std::string & prop_key, const data & value)
-  {
-    this->_check_nokey_(prop_key);
-    this->_validate_key_(prop_key);
-    _props_[prop_key] = value;
     return;
   }
 
@@ -1292,6 +1281,14 @@ namespace datatools {
     return iter->second;
   }
 
+
+  void properties::store(const std::string & prop_key, const data & value)
+  {
+    this->_check_nokey_(prop_key);
+    this->_validate_key_(prop_key);
+    _props_[prop_key] = value;
+    return;
+  }
 
   void properties::store(const std::string & a_key, bool value_,
                          const std::string & description_, bool a_lock)
@@ -1630,111 +1627,33 @@ namespace datatools {
     return;
   }
 
+
+
   void properties::change(const std::string & a_key, const data::vbool& values)
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-
-    DT_THROW_IF(!data_ptr.is_boolean() || !data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of booleans in properties described by '" << get_description() << "' !");
-
-    if (values.size() != data_ptr.get_size()) {
-      int error = data_ptr.boolean(values.size());
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of booleans property '"
-                  << a_key << "': "
-                  << data::get_error_message(error) << " in properties described by '" << get_description() << "' !");
-    }
-    for (size_t i{0}; i < values.size(); ++i) {
-      int error = data_ptr.set_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of booleans property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
+    this->_change_vector_impl_(a_key, values);
     return;
   }
 
   void properties::change(const std::string & a_key, const data::vint& values)
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-
-    DT_THROW_IF(!data_ptr.is_integer() || !data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of integers in properties described by '" << get_description() << "' !");
-    if (values.size() != data_ptr.get_size()) {
-      int error = data_ptr.integer(values.size());
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of integers property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
-    for (size_t i{0}; i < values.size(); ++i) {
-      int error = data_ptr.set_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of integers property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
+    this->_change_vector_impl_(a_key, values);
     return;
   }
 
   void properties::change(const std::string & a_key,
                           const data::vdouble& values)
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_real() || ! data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of reals in properties described by '" << get_description() << "' !");
-    if (values.size() != data_ptr.get_size()) {
-      int error = data_ptr.real(values.size());
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of reals property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
-    for (size_t i{0}; i < values.size(); ++i) {
-      int error = data_ptr.set_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of reals property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
+    this->_change_vector_impl_(a_key, values);
     return;
   }
 
   void properties::change(const std::string & a_key,
                           const data::vstring& values)
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_string() || ! data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of strings in properties described by '" << get_description() << "' !");
-    if (values.size() != data_ptr.get_size()) {
-      int error = data_ptr.string(values.size());
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of strings property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
-    for (size_t i{0}; i < values.size(); ++i) {
-      int error = data_ptr.set_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot change value for vector of strings property '"
-                  << a_key << "' in properties described by '" << get_description() << "': "
-                  << data::get_error_message(error) << " !");
-    }
+    this->_change_vector_impl_(a_key, values);
     return;
   }
-
 
   //------
   // - "update" member functions
@@ -1793,16 +1712,24 @@ namespace datatools {
 
   //-----
   // - "fetch" member functions
-
-  int properties::fetch_integer_scalar(const std::string & name) const
+  const properties::data &
+  properties::get(const std::string & prop_key) const
   {
-    return this->fetch_integer(name, 0);
+    return this->_get_valid_data_(prop_key);
   }
 
-  int properties::fetch_integer_vector(const std::string & name,
-                                       size_t index) const
+ void properties::fetch(const std::string & a_key, bool& value,
+                         size_t index) const
   {
-    return this->fetch_integer(name, index);
+    this->_fetch_scalar_impl_(a_key, value, index);
+    return;
+  }
+
+  bool properties::fetch_boolean(const std::string & a_key, size_t index) const
+  {
+    bool value;
+    this->fetch(a_key, value, index);
+    return value;
   }
 
   bool properties::fetch_boolean_scalar(const std::string & name) const
@@ -1816,91 +1743,6 @@ namespace datatools {
     return this->fetch_boolean(name, index);
   }
 
-  double properties::fetch_real_scalar(const std::string & name) const
-  {
-    return this->fetch_real(name, 0);
-  }
-
-  double properties::fetch_real_vector(const std::string & name,
-                                       size_t index) const
-  {
-    return this->fetch_real(name, index);
-  }
-
-  std::string properties::fetch_string_scalar(const std::string & name) const
-  {
-    return this->fetch_string(name, 0);
-  }
-
-  std::string properties::fetch_string_vector(const std::string & name,
-                                              size_t index) const
-  {
-    return this->fetch_string(name, index);
-  }
-
-  std::string properties::fetch_path_scalar(const std::string & name) const
-  {
-    return this->fetch_path(name, 0);
-  }
-
-  std::string properties::fetch_path_vector(const std::string & name,
-                                            size_t index) const
-  {
-    return this->fetch_path(name, index);
-  }
-
-  void properties::fetch(const std::string & a_key, bool& value,
-                         size_t index) const
-  {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    int error = data_ptr.get_value(value, index);
-    DT_THROW_IF(error != data::ERROR_SUCCESS,
-                std::logic_error,
-                "Cannot fetch boolean value from property '"
-                << a_key << "' in properties described by '" << get_description() << "': "
-                << data::get_error_message(error) << " !");
-    return;
-  }
-
-  void properties::fetch(const std::string & a_key, int& value,
-                         size_t index) const
-  {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    int error = data_ptr.get_value(value, index);
-    DT_THROW_IF(error != data::ERROR_SUCCESS,
-                std::logic_error,
-                "Cannot fetch integer value from property '"
-                << a_key << "' in properties described by '" << get_description() << "': "
-                << data::get_error_message(error) << " !");
-    return;
-  }
-
-  void properties::fetch(const std::string & a_key, double& value,
-                         size_t index) const
-  {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    int error = data_ptr.get_value(value, index);
-    DT_THROW_IF(error != data::ERROR_SUCCESS,
-                std::logic_error,
-                "Cannot fetch real value from property '"
-                << a_key << "' in properties described by '" << get_description() << "': "
-                << data::get_error_message(error) << " !");
-    return;
-  }
-
-  void properties::fetch(const std::string & a_key, std::string & value,
-                         size_t index) const
-  {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    int error = data_ptr.get_value(value, index);
-    DT_THROW_IF(error != data::ERROR_SUCCESS,
-                std::logic_error,
-                "Cannot fetch string value from property '"
-                << a_key << "' in properties described by '" << get_description() << "': "
-                << data::get_error_message(error) << " !");
-    return;
-  }
-
   bool properties::has_flag(const std::string & a_key) const
   {
     bool flag_is_on = false;
@@ -1912,11 +1754,12 @@ namespace datatools {
     return flag_is_on;
   }
 
-  bool properties::fetch_boolean(const std::string & a_key, size_t index) const
+
+  void properties::fetch(const std::string & a_key, int& value,
+                         size_t index) const
   {
-    bool value;
-    this->fetch(a_key, value, index);
-    return value;
+    this->_fetch_scalar_impl_(a_key, value, index);
+    return;
   }
 
   int properties::fetch_integer(const std::string & a_key, size_t index) const
@@ -1924,6 +1767,17 @@ namespace datatools {
     int value;
     this->fetch(a_key, value, index);
     return value;
+  }
+
+  int properties::fetch_integer_scalar(const std::string & name) const
+  {
+    return this->fetch_integer(name, 0);
+  }
+
+  int properties::fetch_integer_vector(const std::string & name,
+                                       size_t index) const
+  {
+    return this->fetch_integer(name, index);
   }
 
   int properties::fetch_range_integer(const std::string & a_key, int min_, int max_, size_t index) const
@@ -1951,41 +1805,11 @@ namespace datatools {
     return (unsigned int) value;
   }
 
-  double properties::fetch_real_with_explicit_dimension(const std::string & a_key,
-                                                        const std::string & a_dimension,
-                                                        size_t index) const
+  void properties::fetch(const std::string & a_key, double& value,
+                         size_t index) const
   {
-    double q = fetch_real_with_explicit_unit(a_key, index);
-    double unit_value = 1.0;
-    std::string unit_symbol;
-    std::string unit_label;
-    DT_THROW_IF(!units::find_unit(get_unit_symbol(a_key), unit_value, unit_label), std::logic_error, "Missing unit !");
-    DT_THROW_IF(unit_label != a_dimension,
-                std::logic_error,
-                "Property '" << a_key << "' has no '" << a_dimension << "' unit; found '" << unit_label << "'!");
-    return q;
-  }
-
-  double properties::fetch_real_with_explicit_unit(const std::string & a_key,
-                                                   size_t index) const
-  {
-    double value;
-    this->fetch(a_key, value, index);
-    DT_THROW_IF(!has_explicit_unit(a_key),
-                std::logic_error,
-                "Property '" << a_key << "' has no explicit unit!");
-    return value;
-  }
-
-  double properties::fetch_dimensionless_real(const std::string & a_key,
-                                              size_t index) const
-  {
-    double value;
-    this->fetch(a_key, value, index);
-    DT_THROW_IF(has_explicit_unit(a_key),
-                std::logic_error,
-                "Property '" << a_key << "' is not dimensionless!");
-    return value;
+    this->_fetch_scalar_impl_(a_key, value, index);
+    return;
   }
 
   double properties::fetch_real(const std::string & a_key, size_t index) const
@@ -1995,13 +1819,55 @@ namespace datatools {
     return value;
   }
 
-  char properties::fetch_one_character(const std::string & a_key, size_t index) const
+  double properties::fetch_real_scalar(const std::string & name) const
   {
-    std::string value;
-    this->fetch(a_key, value, index);
-    DT_THROW_IF(value.length() != 1, std::logic_error,
-                "String property named '" << a_key << "' with value '" << value << "' does not contain one single character!");
-    return value[0];
+    return this->fetch_real(name, 0);
+  }
+
+  double properties::fetch_real_vector(const std::string & name,
+                                       size_t index) const
+  {
+    return this->fetch_real(name, index);
+  }
+
+  double properties::fetch_dimensionless_real(const std::string & a_key,
+                                              size_t index) const
+  {
+    DT_THROW_IF(has_explicit_unit(a_key),
+                std::logic_error,
+                "Property '" << a_key << "' is not dimensionless!");
+    return this->fetch_real(a_key, index);
+  }
+
+  double properties::fetch_real_with_explicit_unit(const std::string & a_key,
+                                                   size_t index) const
+  {
+    DT_THROW_IF(!has_explicit_unit(a_key),
+                std::logic_error,
+                "Property '" << a_key << "' has no explicit unit!");
+    return this->fetch_real(a_key, index);
+  }
+
+  double properties::fetch_real_with_explicit_dimension(const std::string & a_key,
+                                                        const std::string & a_dimension,
+                                                        size_t index) const
+  {
+    double unit_value = 1.0;
+    std::string unit_symbol;
+    std::string unit_label;
+    DT_THROW_IF(!units::find_unit(get_unit_symbol(a_key), unit_value, unit_label), std::logic_error, "Missing unit !");
+    DT_THROW_IF(unit_label != a_dimension,
+                std::logic_error,
+                "Property '" << a_key << "' has no '" << a_dimension << "' unit; found '" << unit_label << "'!");
+    return this->fetch_real_with_explicit_unit(a_key, index);
+  }
+
+
+  void properties::fetch(const std::string & a_key, std::string & value,
+                         size_t index) const
+  {
+    this->_fetch_scalar_impl_(a_key, value, index);
+    return;
   }
 
   std::string properties::fetch_string(const std::string & a_key,
@@ -2012,100 +1878,112 @@ namespace datatools {
     return value;
   }
 
+  std::string properties::fetch_string_scalar(const std::string & name) const
+  {
+    return this->fetch_string(name, 0);
+  }
+
+  std::string properties::fetch_string_vector(const std::string & name,
+                                              size_t index) const
+  {
+    return this->fetch_string(name, index);
+  }
+
   std::string properties::fetch_path(const std::string & a_key,
                                      size_t index) const
   {
-    std::string value;
-    this->fetch(a_key, value, index);
+    std::string value = this->fetch_string(a_key, index);
     DT_THROW_IF(!fetch_path_with_env(value),
                 std::logic_error,
                 "Property '" << a_key << "' cannot be interpreted as a valid path string !");
     return value;
   }
 
+  std::string properties::fetch_path_scalar(const std::string & name) const
+  {
+    return this->fetch_path(name, 0);
+  }
+
+  std::string properties::fetch_path_vector(const std::string & name,
+                                            size_t index) const
+  {
+    return this->fetch_path(name, index);
+  }
+
+
+  char properties::fetch_one_character(const std::string & a_key, size_t index) const
+  {
+    std::string value = this->fetch_string(a_key, index);
+    DT_THROW_IF(value.length() != 1, std::logic_error,
+                "String property named '" << a_key << "' with value '" << value << "' does not contain one single character!");
+    return value[0];
+  }
+
+
   void properties::fetch(const std::string & a_key, data::vbool& values) const
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_boolean() || !data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of booleans !");
-    values.resize(data_ptr.size());
-    values.assign(data_ptr.size(), data::defaults::boolean_value());
-    for (int i = 0; i < (int)values.size(); ++i) {
-      bool val;
-      int error = data_ptr.get_value(val, i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot fetch a vector of booleans from property '"
-                  << a_key << "': " << data::get_error_message(error) << " !");
-      values[i] = val;
-    }
+    this->_fetch_vector_impl_(a_key, values);
     return;
   }
 
   void properties::fetch(const std::string & a_key, data::vint& values) const
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_integer() || ! data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of integers !");
-    values.resize(data_ptr.size());
-    values.assign(data_ptr.size(),data::defaults::integer_value());
-    for (int i = 0; i < (int)values.size(); ++i) {
-      int error = data_ptr.get_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
+    this->_fetch_vector_impl_(a_key, values);
+    return;
+  }
+
+  void properties::fetch(const std::string & a_key,
+                         std::set<int>& values,
+                         bool allow_duplication_) const
+  {
+    data::vint vvalues;
+    this->fetch(a_key, vvalues);
+    for (const int& value : vvalues) {
+      DT_THROW_IF(! allow_duplication_ && values.count(value) != 0,
                   std::logic_error,
-                  "Cannot fetch a vector of integers from property '"
-                  << a_key << "' in properties described by '" << get_description() << "': " << data::get_error_message(error) << " !");
+                  "Duplicated integer value [" << value << "] at key '" << a_key << "'!");
+      values.insert(value);
     }
+    return;
+  }
+
+  void properties::fetch_positive(const std::string & a_key,
+                                  std::set<unsigned int>& values,
+                                  bool allow_duplication_) const
+  {
+    std::set<int> vvalues;
+    this->fetch(a_key, vvalues, allow_duplication_);
+    auto firstNeg = std::find_if(vvalues.begin(), vvalues.end(), [](int i){return i < 0;});
+    DT_THROW_IF(firstNeg != vvalues.end(),
+                std::logic_error,
+                "Unauthorized negative integer value [" << *firstNeg << "] at key '" << a_key << "'!");
+    values.insert(vvalues.begin(), vvalues.end());
+    return;
+  }
+
+
+  void properties::fetch(const std::string & a_key,
+                         data::vdouble& values) const
+  {
+    this->_fetch_vector_impl_(a_key, values);
     return;
   }
 
   void properties::fetch_dimensionless(const std::string & a_key,
                                        data::vdouble& values) const
   {
-    this->fetch(a_key, values);
     DT_THROW_IF(has_explicit_unit(a_key),
                 std::logic_error,
                 "Property '" << a_key << "' is not dimensionless!");
+    this->fetch(a_key, values);
     return;
   }
 
-  void properties::fetch(const std::string & a_key,
-                         data::vdouble& values) const
-  {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_real() || ! data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of reals !");
-    values.resize(data_ptr.size());
-    values.assign(data_ptr.size(), data::defaults::real_value());
-    for (int i = 0; i < (int)values.size(); ++i) {
-      int error = data_ptr.get_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot fetch a vector of reals from property '"
-                  << a_key << "' in properties described by '" << get_description() << "': " << data::get_error_message(error) << " !");
-    }
-    return;
-  }
 
   void properties::fetch(const std::string & a_key,
                          data::vstring& values) const
   {
-    auto& data_ptr = this->_get_valid_data_(a_key);
-    DT_THROW_IF(!data_ptr.is_string() || ! data_ptr.is_vector(),
-                std::logic_error,
-                "Property '" << a_key << "' is not a vector of string in properties described by '" << get_description() << "' !");
-    values.resize(data_ptr.size());
-    values.assign(data_ptr.size(), data::defaults::string_value());
-    for (int i = 0; i < (int)values.size(); ++i) {
-      int error = data_ptr.get_value(values[i], i);
-      DT_THROW_IF(error != data::ERROR_SUCCESS,
-                  std::logic_error,
-                  "Cannot fetch  a vector of strings from property '"
-                  << a_key << "' in properties described by '" << get_description() << "': " << data::get_error_message(error) << " !");
-    }
+    this->_fetch_vector_impl_(a_key, values);
     return;
   }
 
@@ -2115,26 +1993,10 @@ namespace datatools {
   {
     std::vector<std::string> vvalues;
     this->fetch(a_key, vvalues);
-
-    for (const auto& value : vvalues) {
-      DT_THROW_IF(values.count(value) != 0 && ! allow_duplication_,
+    for (const std::string& value : vvalues) {
+      DT_THROW_IF(! allow_duplication_ && values.count(value) != 0,
                   std::logic_error,
                   "Duplicated string value '" << value << "' at key '" << a_key << "'!");
-      values.insert(value);
-    }
-    return;
-  }
-
-  void properties::fetch(const std::string & a_key,
-                         std::set<int>& values,
-                         bool allow_duplication_) const
-  {
-    std::vector<int> vvalues;
-    this->fetch(a_key, vvalues);
-    for (const auto& value : vvalues) {
-      DT_THROW_IF(values.count(value) != 0 && ! allow_duplication_,
-                  std::logic_error,
-                  "Duplicated integer value [" << value << "] at key '" << a_key << "'!");
       values.insert(value);
     }
     return;
@@ -2143,40 +2005,18 @@ namespace datatools {
   void properties::fetch_unique_ordered(const std::string & key_,
                                         std::vector<std::string> & values_) const
   {
+    // Modifies whatever happens later...
     values_.clear();
-    std::vector<std::string> vvalues;
-    this->fetch(key_, vvalues);
-    values_.reserve(vvalues.size());
-    std::set<std::string> records;
-    for (const auto& value : vvalues) {
-      DT_THROW_IF(records.count(value), std::logic_error,
-                  "Duplicated string value [" << value << "] at key '" << key_ << "'!");
-      records.insert(value);
-      values_.push_back(value);
-    }
+
+    // Fetching via the set specialization will throw on duplication
+    std::set<std::string> tmp;
+    this->fetch(key_, tmp, false);
+
+    this->fetch(key_, values_);
     return;
   }
 
-  void properties::fetch_positive(const std::string & a_key,
-                                  std::set<unsigned int>& values,
-                                  bool allow_duplication_) const
-  {
-    std::vector<int> vvalues;
-    this->fetch(a_key, vvalues);
-
-    for (int value : vvalues) {
-      DT_THROW_IF(value < 0,
-                  std::logic_error,
-                  "Unauthorized negative integer value [" << value << "] at key '" << a_key << "'!");
-      DT_THROW_IF(values.count(value) != 0 && ! allow_duplication_,
-                  std::logic_error,
-                  "Duplicated integer value [" << value << "] at key '" << a_key << "'!");
-      values.insert(static_cast<unsigned int>(value));
-    }
-    return;
-  }
-
-  std::string properties::key_to_string(const std::string & a_key) const
+   std::string properties::key_to_string(const std::string & a_key) const
   {
     if (!this->has_key(a_key)) return "";
     std::ostringstream oss;
