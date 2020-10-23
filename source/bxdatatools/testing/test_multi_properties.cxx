@@ -75,9 +75,7 @@ int main (int argc_ , char ** argv_)
       mp.print_tree(clog);
 
       clog << endl << "Saving in ASCII file keeping private entries..." << endl;
-      mp.write ("test_multi_properties.conf",
-                datatools::multi_properties::config::HEADER_FOOTER);
-
+      mp.write ("test_multi_properties.conf");
       {
         clog << endl << "Serializing in XML archive file..." << endl;
         string filename = "test_multi_properties.xml";
@@ -98,8 +96,7 @@ int main (int argc_ , char ** argv_)
       clog << "mp :" << endl;
       mp.print_tree(clog);
       mp.write ("test_multi_properties_2.conf",
-                datatools::multi_properties::config::HEADER_FOOTER
-                | datatools::multi_properties::config::SKIP_PRIVATE_SECTIONS);
+                datatools::multi_properties::config::SKIP_PRIVATE_SECTIONS);
 
       {
         clog << endl << "Deserializing from XML archive file..." << endl;

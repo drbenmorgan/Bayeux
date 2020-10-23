@@ -448,7 +448,6 @@ namespace datatools {
     //----------------------------------------------------------------------
     // Config inner class
     //
-    friend class config;
     //! \brief Class for ASCII file I/O operations with properties objects.
     class config {
     public:

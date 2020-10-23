@@ -866,14 +866,13 @@ namespace datatools {
 
   void properties::erase_all()
   {
-    _props_.clear();
+    this->clear();
     return;
   }
 
   void properties::clear()
   {
     _props_.clear();
-    _clear_key_validator_();
     return;
   }
 
